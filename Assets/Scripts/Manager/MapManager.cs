@@ -3,6 +3,9 @@ using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using Genoverrei.DesignPattern;
 
+/// <summary>
+/// <para> (TH) : ศูนย์จัดการแผนที่ แก้ปัญหาพิกัดเบี้ยวจาก Offset และปัญหาชนอากาศ </para>
+/// </summary>
 public sealed class MapManager : MonoBehaviour
 {
     [Header("Observer Channels")]
@@ -10,7 +13,10 @@ public sealed class MapManager : MonoBehaviour
     [SerializeField] private BombChannelSO _bombChannel;
 
     [Header("Tilemaps")]
+    [Tooltip("ใส่เลเยอร์กำแพงทึบ")]
     [SerializeField] private List<Tilemap> _solidTilemaps = new();
+
+    [Tooltip("ใส่เลเยอร์ของพังได้")]
     [SerializeField] private List<Tilemap> _destructibleTilemaps = new();
 
     private HashSet<Vector2Int> _dangerousCells = new();
@@ -19,64 +25,85 @@ public sealed class MapManager : MonoBehaviour
     {
         if (_mapChannel != null)
         {
-            // 🚀 เสียบปลั๊ก: ฝากฟังก์ชันไว้ที่ Channel
             _mapChannel.OnCheckWalkable = IsWalkable;
-            _mapChannel.OnCheckDangerous = IsDangerous;
-            _mapChannel.OnCheckSolid = IsSolid;             // 👈 เชื่อมต่อ
-            _mapChannel.OnCheckDestructible = IsDestructible; // 👈 เชื่อมต่อ
-            _mapChannel.OnRequestDestruction = ExecuteHandleExplosionHit;
+            _mapChannel.OnCheckSolid = IsSolid;
+            _mapChannel.OnCheckDestructible = IsDestructible;
+            _mapChannel.OnRequestDestruction = (gridPos, intruder) => ExecuteProcessDestruction(gridPos);
             _mapChannel.OnAddDanger = AddDangerZone;
             _mapChannel.OnRemoveDanger = RemoveDangerZone;
         }
 
         if (_bombChannel != null)
-            _bombChannel.OnExplosionHit += ExecuteHandleExplosionHit;
+            _bombChannel.OnExplosionHit += ExecuteHandleFlameCollision;
     }
 
     private void OnDisable()
     {
         if (_mapChannel != null) _mapChannel.Clear();
-        if (_bombChannel != null) _bombChannel.OnExplosionHit -= ExecuteHandleExplosionHit;
+        if (_bombChannel != null) _bombChannel.OnExplosionHit -= ExecuteHandleFlameCollision;
     }
 
-    // --- Logic เช็คสถานะ Tile ---
+    #region Core Logic
 
     public bool IsWalkable(Vector2Int gridPos)
     {
-        Vector3Int cellPos = new(gridPos.x, gridPos.y, 0);
-        foreach (var map in _solidTilemaps) if (map != null && map.HasTile(cellPos)) return false;
-        foreach (var map in _destructibleTilemaps) if (map != null && map.HasTile(cellPos)) return false;
-        return true;
+        // 🚀 ต้องไม่ติดทั้งกำแพงและของพังได้
+        return !IsSolid(gridPos) && !IsDestructible(gridPos);
     }
 
     public bool IsSolid(Vector2Int gridPos)
     {
-        Vector3Int cellPos = new(gridPos.x, gridPos.y, 0);
-        foreach (var map in _solidTilemaps) if (map != null && map.HasTile(cellPos)) return true;
+        // 🛡️ หัวใจสำคัญ: ใช้ WorldToCell จาก Tilemap แรกเพื่อหา Cell ที่แม่นยำที่สุด
+        Vector3 worldPos = new Vector3(gridPos.x, gridPos.y, 0);
+
+        foreach (var map in _solidTilemaps)
+        {
+            if (map != null)
+            {
+                // แปลงพิกัดโดยอ้างอิงจากตำแหน่งจริงของแมพ (รองรับ Offset 0.5)
+                Vector3Int cellPos = map.WorldToCell(worldPos);
+                if (map.HasTile(cellPos)) return true;
+            }
+        }
         return false;
     }
 
     public bool IsDestructible(Vector2Int gridPos)
     {
-        Vector3Int cellPos = new(gridPos.x, gridPos.y, 0);
-        foreach (var map in _destructibleTilemaps) if (map != null && map.HasTile(cellPos)) return true;
+        Vector3 worldPos = new Vector3(gridPos.x, gridPos.y, 0);
+        foreach (var map in _destructibleTilemaps)
+        {
+            if (map != null)
+            {
+                Vector3Int cellPos = map.WorldToCell(worldPos);
+                if (map.HasTile(cellPos)) return true;
+            }
+        }
         return false;
     }
 
-    public bool IsDangerous(Vector2Int gridPos) => _dangerousCells.Contains(gridPos);
-    private void AddDangerZone(Vector2Int gridPos) => _dangerousCells.Add(gridPos);
-    private void RemoveDangerZone(Vector2Int gridPos) => _dangerousCells.Remove(gridPos);
-
-    private void ExecuteHandleExplosionHit(Vector3Int gridPos, Collider2D intruder)
+    public void ExecuteProcessDestruction(Vector3Int gridPos)
     {
+        // ปรับพิกัดเป้าหมายให้ตรงร่อง Cell
+        Vector3 worldPos = new Vector3(gridPos.x, gridPos.y, 0);
+
         foreach (var map in _destructibleTilemaps)
         {
-            if (map != null && map.HasTile(gridPos))
+            if (map != null)
             {
-                map.SetTile(gridPos, null);
-                RemoveDangerZone((Vector2Int)gridPos);
-                Debug.Log($"<color=orange>[MapManager]</color> Tile destroyed at {gridPos}");
+                Vector3Int targetCell = map.WorldToCell(worldPos);
+                if (map.HasTile(targetCell))
+                {
+                    map.SetTile(targetCell, null);
+                    RemoveDangerZone((Vector2Int)targetCell);
+                }
             }
         }
     }
+
+    #endregion
+
+    private void AddDangerZone(Vector2Int gridPos) => _dangerousCells.Add(gridPos);
+    private void RemoveDangerZone(Vector2Int gridPos) => _dangerousCells.Remove(gridPos);
+    private void ExecuteHandleFlameCollision(Vector3Int gridPos, Collider2D intruder) => ExecuteProcessDestruction(gridPos);
 }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using NaughtyAttributes;
-using Genoverrei.DesignPattern; // 🚀 เพิ่ม Namespace สำหรับ MapChannelSO
+using Genoverrei.DesignPattern;
+using Genoverrei.Libary;
 
 [RequireComponent(typeof(StatsController))]
 [RequireComponent(typeof(Rigidbody2D))]

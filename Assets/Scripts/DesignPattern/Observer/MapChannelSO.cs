@@ -3,7 +3,7 @@ using System;
 
 namespace Genoverrei.DesignPattern
 {
-    [CreateAssetMenu(fileName = "MapChannel", menuName = "BombGame/Events/MapChannel")]
+    [CreateAssetMenu(fileName = "MapChannel", menuName = "BombGame/Channels/MapChannel")]
     public sealed class MapChannelSO : ScriptableObject
     {
         public Func<Vector2Int, bool> OnCheckWalkable;
@@ -15,8 +15,8 @@ namespace Genoverrei.DesignPattern
         public Action<Vector2Int> OnAddDanger;
         public Action<Vector2Int> OnRemoveDanger;
 
-        // 🚀 เปลี่ยนจาก ?.Invoke เป็นการเช็ค null ปกติ
-        public bool IsWalkable(Vector2Int pos) => OnCheckWalkable != null ? OnCheckWalkable(pos) : false;
+        // 🚀 ถ้าไม่มีคนมาลงทะเบียน ให้คืนค่า true (เดินได้) เพื่อไม่ให้ตัวละครค้าง
+        public bool IsWalkable(Vector2Int pos) => OnCheckWalkable != null ? OnCheckWalkable(pos) : true;
         public bool IsDangerous(Vector2Int pos) => OnCheckDangerous != null ? OnCheckDangerous(pos) : false;
         public bool IsSolid(Vector2Int pos) => OnCheckSolid != null ? OnCheckSolid(pos) : false;
         public bool IsDestructible(Vector2Int pos) => OnCheckDestructible != null ? OnCheckDestructible(pos) : false;
