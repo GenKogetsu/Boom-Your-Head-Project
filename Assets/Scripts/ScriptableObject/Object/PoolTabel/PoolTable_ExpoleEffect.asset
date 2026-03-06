@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Genoverrei.DesignPattern.PoolTableData
   Entries:
   - Prefab: {fileID: 710774327073055152, guid: 7d7e9c7ce1308484e863a8b4489e090f, type: 3}
+    InitialSize: 64
     MaxSize: 256

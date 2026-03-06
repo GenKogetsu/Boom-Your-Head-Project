@@ -1,60 +1,40 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using Genoverrei.DesignPattern;
+using Genoverrei.Libary;
 
-/// <summary>
-/// <para> Summary : </para>
-/// <para> (TH) : เซนเซอร์ไฟระเบิด แจ้งเหตุการณ์การชนผ่าน BombChannelSO แทนการใช้ Singleton </para>
-/// <para> (EN) : Explosion sensor notifying collision events via BombChannelSO instead of Singleton. </para>
-/// </summary>
-[RequireComponent(typeof(Collider2D))]
 public sealed class BombTriggerSensor : MonoBehaviour
 {
-    #region Variable
-
-    [Header("Observer")]
     [SerializeField] private BombChannelSO _bombChannel;
-
-    [Header("Lifecycle Settings")]
     [SerializeField] private AnimationClip _lifeTime;
+    [SerializeField] private LayerMask _mapLayer, _livingLayer, _itemLayer, _bombLayer;
 
-    #endregion //Variable
-
-    #region Unity Lifecycle
-
-    private void OnEnable()
-    {
-        // เริ่มนับถอยหลังการ Release กลับเข้า Pool
-        Invoke(nameof(ExecuteRelease), _lifeTime.length);
-    }
-
-    private void OnDisable()
-    {
-        CancelInvoke();
-    }
+    private void OnEnable() => Invoke(nameof(ExecuteRelease), _lifeTime != null ? _lifeTime.length : 0.5f);
+    private void OnDisable() => CancelInvoke();
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (_bombChannel == null) return;
+        string layerName = LayerMask.LayerToName(other.gameObject.layer);
 
-        // คำนวณตำแหน่ง Grid จากตำแหน่งปัจจุบันของ Sensor
-        Vector3Int gridPos = new(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+        // 🚀 ใช้ Bitwise เช็ค Layer เพื่อความเร็ว
+        int bit = 1 << other.gameObject.layer;
 
-        Debug.Log($"[BombTriggerSensor] Detected collision at Grid Position: {gridPos} with {other.gameObject.name}");
-
-        // ส่งสัญญาณผ่าน Channel เพื่อให้ Manager ที่เกี่ยวข้องนำไปจัดการต่อ
-        _bombChannel.RaiseExplosionHit(gridPos, other);
+        if ((bit & _mapLayer) != 0) _bombChannel.RaiseExplosionHit(Vector3Int.RoundToInt(transform.position), other);
+        else if ((bit & _livingLayer) != 0) 
+        {
+            var stats = other.GetComponentInParent<ITakeDamageable>();
+            stats?.TakeDamage(1);
+        }
+        else if ((bit & _itemLayer) != 0)
+        {
+            // 🚀 ไอเทมก็ต้องใช้ชื่อตัวเองเป็น Key ในการกลับ Pool
+            string itemKey = other.gameObject.name.Replace("(Clone)", "").Trim();
+            ObjectPoolManager.Instance.Release(itemKey, other);
+        }
+        else if ((bit & _bombLayer) != 0)
+        {
+            if (other.TryGetComponent<BombController>(out var bomb)) bomb.ForceExplode();
+        }
     }
 
-    #endregion //Unity Lifecycle
-
-    #region Private Logic
-
-    private void ExecuteRelease()
-    {
-        // ปล่อยตัวเซนเซอร์ (ที่ใช้ Animation ไฟ) กลับเข้า Pool
-        ObjectPoolManager.Instance.Release("Explosion", this);
-    }
-
-    #endregion //Private Logic
+    private void ExecuteRelease() => ObjectPoolManager.Instance.Release("Explosion", this);
 }

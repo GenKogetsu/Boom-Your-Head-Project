@@ -4,11 +4,6 @@ using System.Collections.Generic;
 
 namespace Genoverrei.DesignPattern
 {
-    /// <summary>
-    /// <para> summary_PoolTableData </para>
-    /// <para> (TH) : ข้อมูลตารางคลังวัตถุสำหรับกำหนดค่า Prefab และขนาดสูงสุดผ่าน ScriptableObject </para>
-    /// <para> (EN) : Pool table data asset for configuring prefabs and max sizes via ScriptableObject. </para>
-    /// </summary>
     [CreateAssetMenu(fileName = "PoolTable_", menuName = "BombGame/Data/PoolTable")]
     public sealed class PoolTableData : ScriptableObject
     {
@@ -16,10 +11,14 @@ namespace Genoverrei.DesignPattern
         public struct PoolEntry
         {
             public GameObject Prefab;
+
+            [Tooltip("จำนวนที่ต้องการให้สร้างรอไว้ทันทีเมื่อเริ่มเกม")]
+            public int InitialSize;
+
+            [Tooltip("ขนาดสูงสุดของ Pool")]
             public int MaxSize;
         }
 
         public List<PoolEntry> Entries = new();
     }
 }
-

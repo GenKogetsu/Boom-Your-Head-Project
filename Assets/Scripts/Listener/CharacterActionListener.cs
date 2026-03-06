@@ -41,7 +41,6 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
 
     public void OnHandleSignal(ISignal signal)
     {
-        Debug.Log($"[CharacterActionListener] Received signal: {signal.Action} for {_myCharacterId}");
         switch (signal.Action)
         {
             case ActionType.Move:

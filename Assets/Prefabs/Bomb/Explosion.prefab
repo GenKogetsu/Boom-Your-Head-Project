@@ -142,6 +142,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BombTriggerSensor
   _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
   _lifeTime: {fileID: 7400000, guid: c915a95ed9a0b57438a7d855db4c670f, type: 2}
+  _mapLayer:
+    serializedVersion: 2
+    m_Bits: 2048
+  _livingLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _itemLayer:
+    serializedVersion: 2
+    m_Bits: 4096
+  _bombLayer:
+    serializedVersion: 2
+    m_Bits: 8192
 --- !u!1 &1032164902837596891
 GameObject:
   m_ObjectHideFlags: 0
