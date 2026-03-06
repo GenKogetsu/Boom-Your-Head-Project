@@ -1,20 +1,43 @@
-﻿using UnityEngine;
+﻿
+using UnityEngine;
+
 using System;
 
-namespace BombGame.RecordEventSpace;
 
-[CreateAssetMenu(fileName = "BombChannel", menuName = "BombGame/Channels/Bomb Channel")]
-public sealed class BombChannelSO : ScriptableObject
+
+namespace BombGame.RecordEventSpace 
 {
-    public event Action<Vector2Int, int> OnBombPlanted;
-    public event Action<Vector2Int, int> OnBombExploded;
+    [CreateAssetMenu(fileName = "BombChannel", menuName = "BombGame/Events/Bomb Channel")]
 
-    // 🚀 เพิ่มตัวนี้เพื่อให้ Sensor ตะโกนบอก Manager ได้โดยตรง
-    public event Action<Vector3Int, Collider2D> OnExplosionHit;
+    public sealed class BombChannelSO : ScriptableObject
 
-    public void RaiseBombPlanted(Vector2Int pos, int radius) => OnBombPlanted?.Invoke(pos, radius);
-    public void RaiseBombExploded(Vector2Int pos, int radius) => OnBombExploded?.Invoke(pos, radius);
+    {
 
-    // 🚀 ฟังก์ชันตะโกนเมื่อไฟไปแตะโดนอะไรเข้า
-    public void RaiseExplosionHit(Vector3Int gridPos, Collider2D other) => OnExplosionHit?.Invoke(gridPos, other);
+        public event Action<Vector2Int, int> OnBombPlanted;
+
+        public event Action<Vector2Int, int> OnBombExploded;
+
+
+
+        // 🚀 เพิ่มตัวนี้เพื่อให้ Sensor ตะโกนบอก Manager ได้โดยตรง
+
+        public event Action<Vector3Int, Collider2D> OnExplosionHit;
+
+
+
+        public void RaiseBombPlanted(Vector2Int pos, int radius) => OnBombPlanted?.Invoke(pos, radius);
+
+        public void RaiseBombExploded(Vector2Int pos, int radius) => OnBombExploded?.Invoke(pos, radius);
+
+
+
+        // 🚀 ฟังก์ชันตะโกนเมื่อไฟไปแตะโดนอะไรเข้า
+
+        public void RaiseExplosionHit(Vector3Int gridPos, Collider2D other) => OnExplosionHit?.Invoke(gridPos, other);
+
+    }
 }
+
+
+
+
