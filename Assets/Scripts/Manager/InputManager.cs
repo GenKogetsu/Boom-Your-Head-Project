@@ -6,16 +6,15 @@ namespace BombGame.Manager;
 
 /// <summary>
 /// <para> Summary : </para>
-/// <para> (TH) : ตัวจัดการ Input ที่รอรับสัญญาณจาก Player Input Component เพื่อส่ง CharacterAction ผ่าน SO </para>
-/// <para> (EN) : Input manager that waits for Player Input Component signals to broadcast CharacterAction via SO. </para>
+/// <para> (TH) : ศูนย์กลางรวบรวมคำสั่งทั้งหมด (ผู้เล่นและบอท) เพื่อกระจาย CharacterAction เข้าสู่ EventBus </para>
+/// <para> (EN) : Central hub aggregating all commands (player and bot) to broadcast CharacterAction to EventBus. </para>
 /// </summary>
 public sealed class InputManager : MonoBehaviour
 {
     #region Variable
 
-    [Header("Event Channels")]
-    [Required]
-    [SerializeField] private CharacterActionChannelSO _actionChannel;
+    [Header("Bot Communication")]
+    [SerializeField] private BotInputChannelSO _botInputChannel;
 
     [Header("Session Reference")]
     [Required]
@@ -23,55 +22,70 @@ public sealed class InputManager : MonoBehaviour
 
     #endregion //Variable
 
+    #region Unity Lifecycle
 
-    #region Public Methods (For Player Input Events)
+    private void OnEnable()
+    {
+        // ดักฟังคำสั่งจากฝั่งบอท
+        if (_botInputChannel != null)
+        {
+            _botInputChannel.OnBotActionTriggered += ExecuteHandleBotInput;
+        }
+    }
 
-    /// <summary>
-    /// <para> Summary : </para>
-    /// <para> (TH) : รับค่าจาก Action "Move" เพื่อส่งสัญญาณเคลื่อนที่ </para>
-    /// <para> (EN) : Receives value from "Move" action to broadcast move signal. </para>
-    /// </summary>
+    private void OnDisable()
+    {
+        if (_botInputChannel != null)
+        {
+            _botInputChannel.OnBotActionTriggered -= ExecuteHandleBotInput;
+        }
+    }
+
+    #endregion //Unity Lifecycle
+
+    #region Public Methods (For Player Input)
+
     public void OnMove(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
-        BroadcastAction(ActionType.Move, new MoveInputEvent(input));
+        BroadcastAction(_sessionData.FirstPlayerCharacter, ActionType.Move, new MoveInputEvent(input));
     }
 
-    /// <summary>
-    /// <para> Summary : </para>
-    /// <para> (TH) : รับค่าจาก Action "PlaceBomb" เพื่อส่งสัญญาณ "วางระเบิด" </para>
-    /// <para> (EN) : Receives value from "PlaceBomb" action to broadcast place bomb signal. </para>
-    /// </summary>
     public void OnPlaceBomb(InputAction.CallbackContext context)
     {
-        // ทำงานเฉพาะตอนเริ่มกด (Started) หรือ กดเสร็จสิ้น (Performed) ตามความเหมาะสมของ Input System
         if (context.performed)
         {
-            BroadcastAction(ActionType.PlaceBomb, null);
+            BroadcastAction(_sessionData.FirstPlayerCharacter, ActionType.PlaceBomb, null);
         }
     }
 
     #endregion //Public Methods
 
-
     #region Private Logic
 
     /// <summary>
     /// <para> Summary : </para>
-    /// <para> (TH) : ห่อหุ้ม IEvent ลงใน CharacterAction แล้วส่งออกไปผ่าน ScriptableObject </para>
-    /// <para> (EN) : Wraps IEvent into CharacterAction and publishes via ScriptableObject. </para>
+    /// <para> (TH) : รับคำสั่งที่ผ่านการคิดจากฝั่งบอท แล้วส่งต่อไปยัง EventBus </para>
+    /// <para> (EN) : Receives processed commands from bots and forwards them to EventBus. </para>
     /// </summary>
-    private void BroadcastAction(ActionType actionType, IEvent subEvent)
+    private void ExecuteHandleBotInput(Character target, ActionType action, IEvent subEvent)
     {
-        if (_sessionData == null || _actionChannel == null) return;
+        BroadcastAction(target, action, subEvent);
+    }
 
-        CharacterAction signal = new CharacterAction(
-            _sessionData.FirstPlayerCharacter,
-            actionType,
-            subEvent
-        );
+    /// <summary>
+    /// <para> Summary : </para>
+    /// <para> (TH) : แปลงข้อมูลเป็น CharacterAction แล้วกระจายผ่าน EventBus ตัวเดียวจบ </para>
+    /// <para> (EN) : Converts data into CharacterAction and broadcasts via a single EventBus. </para>
+    /// </summary>
+    private void BroadcastAction(Character target, ActionType actionType, IEvent subEvent)
+    {
+        if (_sessionData == null) return;
 
-        _actionChannel.RaiseEvent(signal);
+        CharacterAction signal = new CharacterAction(target, actionType, subEvent);
+
+        // ส่งขึ้น Bus กลาง ทุกคนที่ Subscribe ไว้จะได้ยินพร้อมกัน
+        EventBus.Instance.Publish(signal);
 
 #if UNITY_EDITOR
         LogAction(signal);
@@ -81,8 +95,7 @@ public sealed class InputManager : MonoBehaviour
     private void LogAction(CharacterAction action)
     {
         if (action.Event is MoveInputEvent moveData && moveData.Direction == Vector2.zero) return;
-
-        Debug.Log($"<b><color=#4FC3F7>[Input Signal]</color></b> Action: {action.Action} | Target: {action.SignalTarget}");
+        Debug.Log($"<color=#4FC3F7>[Input Signal]</color> Action: {action.Action} | Target: {action.SignalTarget}");
     }
 
     #endregion //Private Logic
