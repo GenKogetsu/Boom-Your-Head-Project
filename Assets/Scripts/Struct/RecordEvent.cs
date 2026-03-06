@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace BombGame.RecoreEventSpace;
+namespace BombGame.RecordEventSpace;
 
 /// <summary>
 /// <para> summary : </para>

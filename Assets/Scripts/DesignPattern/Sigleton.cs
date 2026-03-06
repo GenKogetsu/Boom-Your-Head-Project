@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace Genoverrei.DesignPattern;
+﻿namespace Genoverrei.DesignPattern;
 
 /// <summary>
 /// <para>Summary :</para>
@@ -33,7 +31,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
             {
                 if (_instance != null) return _instance;
 
-                _instance = (T)Object.FindFirstObjectByType(typeof(T));
+                _instance = (T)UnityEngine.Object.FindFirstObjectByType(typeof(T));
 
                 if (_instance != null) return _instance;
 

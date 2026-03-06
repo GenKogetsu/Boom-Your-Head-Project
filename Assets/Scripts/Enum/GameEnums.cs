@@ -17,3 +17,17 @@ public enum BombState { Moving, NonCritical, Critical }
 
 /// <summary> (TH) : ส่วนของระเบิดที่ถูกระเบิด | (EN) : Parts of the bomb explosion </summary>
 public enum BombPart { Start, Middle, End }
+
+/// <summary>
+/// <para> Summary : </para>
+/// <para> (TH) : สถานะของการแข่งขันในปัจจุบัน </para>
+/// <para> (EN) : Current state of the match. </para>
+/// </summary>
+public enum MatchState
+{
+    WaitingForPlayers,
+    Starting,
+    Playing,
+    Paused,
+    GameOver
+}

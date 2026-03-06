@@ -1,18 +1,21 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
-using Genoverrei.DesignPattern;
 using NaughtyAttributes;
 
 namespace BombGame.Manager;
 
 /// <summary>
-/// <para> summary : </para>
-/// <para> (TH) : ตัวจัดการ Input ที่รอรับสัญญาณจาก Player Input Component เพื่อส่ง CharacterAction (วางระเบิด/เคลื่อนที่) </para>
-/// <para> (EN) : Input manager that waits for Player Input Component signals to broadcast CharacterAction (PlaceBomb/Move). </para>
+/// <para> Summary : </para>
+/// <para> (TH) : ตัวจัดการ Input ที่รอรับสัญญาณจาก Player Input Component เพื่อส่ง CharacterAction ผ่าน SO </para>
+/// <para> (EN) : Input manager that waits for Player Input Component signals to broadcast CharacterAction via SO. </para>
 /// </summary>
-public sealed class InputManager : Singleton<InputManager>
+public sealed class InputManager : MonoBehaviour
 {
     #region Variable
+
+    [Header("Event Channels")]
+    [Required]
+    [SerializeField] private CharacterActionChannelSO _actionChannel;
 
     [Header("Session Reference")]
     [Required]
@@ -20,10 +23,11 @@ public sealed class InputManager : Singleton<InputManager>
 
     #endregion //Variable
 
+
     #region Public Methods (For Player Input Events)
 
     /// <summary>
-    /// <para> summary : </para>
+    /// <para> Summary : </para>
     /// <para> (TH) : รับค่าจาก Action "Move" เพื่อส่งสัญญาณเคลื่อนที่ </para>
     /// <para> (EN) : Receives value from "Move" action to broadcast move signal. </para>
     /// </summary>
@@ -34,7 +38,7 @@ public sealed class InputManager : Singleton<InputManager>
     }
 
     /// <summary>
-    /// <para> summary : </para>
+    /// <para> Summary : </para>
     /// <para> (TH) : รับค่าจาก Action "PlaceBomb" เพื่อส่งสัญญาณ "วางระเบิด" </para>
     /// <para> (EN) : Receives value from "PlaceBomb" action to broadcast place bomb signal. </para>
     /// </summary>
@@ -49,16 +53,17 @@ public sealed class InputManager : Singleton<InputManager>
 
     #endregion //Public Methods
 
+
     #region Private Logic
 
     /// <summary>
-    /// <para> summary : </para>
-    /// <para> (TH) : ห่อหุ้ม IEvent ลงใน CharacterAction แล้วส่งออกไปผ่าน EventBus </para>
-    /// <para> (EN) : Wraps IEvent into CharacterAction and publishes via EventBus. </para>
+    /// <para> Summary : </para>
+    /// <para> (TH) : ห่อหุ้ม IEvent ลงใน CharacterAction แล้วส่งออกไปผ่าน ScriptableObject </para>
+    /// <para> (EN) : Wraps IEvent into CharacterAction and publishes via ScriptableObject. </para>
     /// </summary>
     private void BroadcastAction(ActionType actionType, IEvent subEvent)
     {
-        if (_sessionData == null) return;
+        if (_sessionData == null || _actionChannel == null) return;
 
         CharacterAction signal = new CharacterAction(
             _sessionData.FirstPlayerCharacter,
@@ -66,7 +71,7 @@ public sealed class InputManager : Singleton<InputManager>
             subEvent
         );
 
-        EventBus.Instance.Publish(signal);
+        _actionChannel.RaiseEvent(signal);
 
 #if UNITY_EDITOR
         LogAction(signal);
