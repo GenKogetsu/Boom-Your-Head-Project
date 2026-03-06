@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.Tilemaps;
-using System;
 using System.Collections.Generic;
 using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
@@ -8,24 +6,21 @@ using Genoverrei.Libary;
 namespace BombGame.Manager
 {
     /// <summary>
-    /// <para> Summary : </para>
-    /// <para> (TH) : ศูนย์จัดการระบบระเบิด การงอกของไฟ (Flame Propagation) และเอฟเฟกต์แอนิเมชัน </para>
+    /// <para> (TH) : ศูนย์จัดการระบบระเบิด การงอกของไฟ และการแจ้งเตือนพื้นที่อันตรายผ่าน MapChannel </para>
     /// </summary>
-    public sealed class BombManager : Singleton<BombManager>, ISignalListener
+    public sealed class BombManager : MonoBehaviour, ISignalListener
     {
         #region Variable
 
         [Header("Observer Channels")]
-        [SerializeField] private BombChannelSO _bombChannel;
+        [SerializeField] private MapChannelSO _mapChannel;     // 🚀 ส่งข้อมูลอันตรายให้บอท
+        [SerializeField] private BombChannelSO _bombChannel;   // 🚀 รับสัญญาณจาก BombController และ Sensor
 
-        [Header("Dependencies")]
-        [SerializeField] private MapManager _mapManager;
+        [Header("Pool Keys (Use Prefab Name)")]
+        [SerializeField] private BombController _bombPrefab;
+        [SerializeField] private ExplosionAnimationController _explosionPrefab;
 
-        [Header("Pool Keys")]
-        [SerializeField] private BombController _bombPoolKey;
-        [SerializeField] private ExplosionAnimationController _explosionPoolKey;
-
-        [Header("Layer & Collision")]
+        [Header("Settings")]
         [SerializeField] private LayerMask _bombLayer;
         [SerializeField] private Vector2 _collisionCheckSize = new(0.8f, 0.8f);
 
@@ -35,118 +30,153 @@ namespace BombGame.Manager
 
         #region Unity Lifecycle
 
-        private void Start() => ExecuteInitializeCache();
+        private void Start()
+        {
+            ExecuteInitializeCache();
+        }
 
         private void OnEnable()
         {
-            EventBus.Instance.Subscribe<ISignal>(OnHandleSignal);
+            // 🚀 ฟังคำสั่งวางระเบิดจาก CharacterActionListener (Input/AI)
+            if (EventBus.Instance != null)
+                EventBus.Instance.Subscribe<ISignal>(OnHandleSignal);
 
+            // 🚀 ฟังเหตุการณ์จากลูกระเบิดและเซนเซอร์ไฟ
             if (_bombChannel != null)
             {
-                _bombChannel.OnBombExploded += ExecuteHandleBombExplosion;
+                _bombChannel.OnBombExploded += ExecuteHandleBombExploded;
                 _bombChannel.OnExplosionHit += ExecuteHandleFlameCollision;
             }
         }
 
         private void OnDisable()
         {
+            if (EventBus.Instance != null)
+                EventBus.Instance.Unsubscribe<ISignal>(OnHandleSignal);
 
             if (_bombChannel != null)
             {
-                _bombChannel.OnBombExploded -= ExecuteHandleBombExplosion;
+                _bombChannel.OnBombExploded -= ExecuteHandleBombExploded;
                 _bombChannel.OnExplosionHit -= ExecuteHandleFlameCollision;
             }
-            if (EventBus.Instance == null) return;
-            EventBus.Instance.Unsubscribe<ISignal>(OnHandleSignal);
         }
 
         #endregion //Unity Lifecycle
 
-        #region Public Methods
+        #region Public Methods (ISignalListener)
 
         public void OnHandleSignal(ISignal signal)
         {
-            if (signal.Action == ActionType.PlaceBomb) TryPlaceBomb(signal.SignalTarget);
+            // รับสัญญาณวางระเบิด
+            if (signal.Action == ActionType.PlaceBomb)
+            {
+                TryPlaceBomb(signal.SignalTarget);
+            }
         }
 
         #endregion //Public Methods
 
         #region Private Logic (Explosion Flow)
 
-        private void ExecuteHandleBombExplosion(Vector2Int origin, int radius)
+        /// <summary>
+        /// (TH) : เมื่อระเบิดทำงาน ให้เริ่มกระบวนการงอกของไฟ
+        /// </summary>
+        private void ExecuteHandleBombExploded(Vector2Int origin, int radius)
         {
-            ExecuteExplosionProcess(origin, radius);
-        }
-
-        private void ExecuteExplosionProcess(Vector2Int origin, int radius)
-        {
-            // 🚀 จุดกลาง (Start) - ทิศทางเป็น Zero
+            // 1. สร้างจุดระเบิดกลาง
             SpawnExplosionEffect(origin, BombPart.Start, Vector2.zero);
 
-            // งอกไฟออกไป 4 ทิศ
+            // 2. งอกไฟออกไป 4 ทิศทาง
             ExecuteSpreadFlame(origin, Vector2Int.up, radius);
             ExecuteSpreadFlame(origin, Vector2Int.down, radius);
             ExecuteSpreadFlame(origin, Vector2Int.left, radius);
             ExecuteSpreadFlame(origin, Vector2Int.right, radius);
         }
 
+        /// <summary>
+        /// (TH) : คำนวณการงอกของไฟตามทิศทางและระยะ พร้อมแจ้งพื้นที่อันตรายให้ AI
+        /// </summary>
         private void ExecuteSpreadFlame(Vector2Int origin, Vector2Int direction, int radius)
         {
             for (int i = 1; i <= radius; i++)
             {
                 Vector2Int targetPos = origin + (direction * i);
 
-                // ถาม MapManager ว่าช่องนี้เป็นกำแพงทึบไหม
-                if (_mapManager.IsSolid(targetPos)) break;
-
-                // ถ้าเป็นกล่อง (พังได้) ให้วางส่วน End แล้วหยุดงอก
-                if (_mapManager.IsDestructible(targetPos))
+                // 🚀 เปลี่ยนจาก ?. มาใช้ if เช็คตรงๆ
+                if (_mapChannel != null)
                 {
-                    SpawnExplosionEffect(targetPos, BombPart.End, (Vector2)direction);
-                    break;
+                    _mapChannel.AddDangerZone(targetPos);
+
+                    if (_mapChannel.IsSolid(targetPos)) break;
+
+                    if (_mapChannel.IsDestructible(targetPos))
+                    {
+                        SpawnExplosionEffect(targetPos, BombPart.End, (Vector2)direction);
+                        break;
+                    }
                 }
 
-                // ถ้าเป็นช่องสุดท้ายของรัศมี ให้วางส่วน End ถ้ายังไม่ใช่ให้วาง Middle
                 BombPart part = (i == radius) ? BombPart.End : BombPart.Middle;
                 SpawnExplosionEffect(targetPos, part, (Vector2)direction);
             }
         }
 
-        /// <summary>
-        /// (TH) : เรียกใช้ ExplosionAnimationController เพื่อแสดงผลภาพไฟระเบิด
-        /// </summary>
         private void SpawnExplosionEffect(Vector2Int pos, BombPart part, Vector2 direction)
         {
-            var effectObject = ObjectPoolManager.Instance.Get<ExplosionAnimationController>(_explosionPoolKey.name, (Vector3)(Vector2)pos, Quaternion.identity);
+            if (_explosionPrefab == null) return;
 
-            if (effectObject != null)
+            // ดึงจาก Pool โดยใช้ชื่อ Prefab เป็น Key
+            var effect = ObjectPoolManager.Instance.Get<ExplosionAnimationController>(
+                _explosionPrefab.name,
+                (Vector3)(Vector2)pos,
+                Quaternion.identity
+            );
+
+            if (effect != null)
             {
-                // 🚀 เรียก Setup เพื่อตั้งค่าภาพและทิศทางทันที
-                effectObject.Setup(part, direction);
+                effect.Setup(part, direction);
             }
         }
 
+        /// <summary>
+        /// (TH) : เมื่อเซนเซอร์ไฟไปแตะโดนวัตถุ
+        /// </summary>
         private void ExecuteHandleFlameCollision(Vector3Int gridPos, Collider2D intruder)
         {
-            if (MapManager.Instance != null)
+            // 🚀 เปลี่ยนจาก ?. เป็น if
+            if (_mapChannel != null)
             {
-                MapManager.Instance.ExecuteProcessDestruction(gridPos);
+                _mapChannel.RaiseDestruction(gridPos, intruder);
             }
 
-            if (intruder.CompareTag("Bomb") && intruder.TryGetComponent<BombController>(out var nextBomb))
+            if (intruder != null && intruder.CompareTag("Bomb"))
             {
-                nextBomb.ForceExplode();
+                if (intruder.TryGetComponent<BombController>(out var nextBomb))
+                {
+                    nextBomb.ForceExplode();
+                }
             }
         }
+
+        #endregion //Explosion Flow
+
+        #region Private Logic (Placement)
 
         private void TryPlaceBomb(Character owner)
         {
-            if (!_statsCache.TryGetValue(owner, out var stats) || stats.BombsRemaining <= 0) return;
+            if (!_statsCache.TryGetValue(owner, out var stats)) return;
+            if (stats.BombsRemaining <= 0) return;
 
-            Vector2 spawnPos = new Vector2(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
+            // ปัดพิกัดตัวละครให้ลงล็อก Grid
+            Vector2 spawnPos = new(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
+
+            // เช็คว่ามีระเบิดวางซ้อนกันไหม
             if (Physics2D.OverlapBox(spawnPos, _collisionCheckSize, 0f, _bombLayer)) return;
 
-            var bomb = ObjectPoolManager.Instance.Get<BombController>(_bombPoolKey.name, (Vector3)spawnPos, Quaternion.identity);
+            if (_bombPrefab == null) return;
+
+            var bomb = ObjectPoolManager.Instance.Get<BombController>(_bombPrefab.name, (Vector3)spawnPos, Quaternion.identity);
+
             if (bomb != null)
             {
                 new BombBuilder()
@@ -163,10 +193,11 @@ namespace BombGame.Manager
             var allStats = FindObjectsByType<StatsController>(FindObjectsSortMode.None);
             foreach (var stats in allStats)
             {
-                if (!_statsCache.ContainsKey(stats.LivingName)) _statsCache.Add(stats.LivingName, stats);
+                if (!_statsCache.ContainsKey(stats.LivingName))
+                    _statsCache.Add(stats.LivingName, stats);
             }
         }
 
-        #endregion //Private Logic
+        #endregion //Placement
     }
 }

@@ -1,171 +1,148 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
-using System.Collections.Generic;
 using NaughtyAttributes;
 
 /// <summary>
-/// <para> Summary : </para>
-/// <para> (TH) : สมองบอทที่สอดส่องความปลอดภัยผ่าน MapManager และสั่งการตัวละครผ่าน EventBus </para>
-/// <para> (EN) : Bot brain monitoring safety via MapManager and commanding characters via EventBus. </para>
+/// <para> (TH) : สมอง AI ที่ใช้ MapChannel ในการตัดสินใจหนีระเบิดและหาทางเดิน </para>
 /// </summary>
 public sealed class BotController : MonoBehaviour, IPathfindable
 {
     #region Variable
-
-    [Header("Session Observer")]
+    [Header("Observer")]
+    [SerializeField] private MapChannelSO _mapChannel;
     [SerializeField] private PlayerSessionChannelSO _sessionChannel;
 
-    [Header("Assigned Target")]
+    [Header("Identity")]
     [SerializeField] private Character _targetToDrive;
 
-    private Transform _bodyTransform;
-
-    [Header("Navigation & Logic")]
-    [SerializeField] private MapManager _mapManager;
-
-    [ReadOnly]
-    [SerializeField] private Vector2Int _targetGridPos;
+    [Header("Settings")]
     [SerializeField] private float _thinkInterval = 0.2f;
+    [ReadOnly][SerializeField] private Vector2Int _targetGridPos;
 
+    private Transform _bodyTransform;
     private float _nextThinkTime;
     private Vector2Int _currentSafeTarget;
     private bool _isFleeing;
+    #endregion
 
-    #endregion //Variable
-
-    #region IPathfindable Implementation
-
-    public Vector2Int CurrentGridPosition => _bodyTransform == null ? Vector2Int.zero : new Vector2Int(
-        Mathf.RoundToInt(_bodyTransform.position.x),
-        Mathf.RoundToInt(_bodyTransform.position.y)
-    );
-
-    public IMapProvider MapProvider => _mapManager;
-
-    /// <summary>
-    /// Explicit Interface Implementation ตามมาตรฐานที่พี่วางไว้
-    /// </summary>
-    Vector2Int IPathfindable.GetNextPath(Vector2Int target) => ExecuteGetNextPath(target);
-
-    #endregion //IPathfindable Implementation
-
-    #region Unity Lifecycle
-
-    private void OnEnable()
+    // 🚀 เปลี่ยนการเช็ค bodyTransform เป็นแบบมาตรฐาน Unity
+    public Vector2Int CurrentGridPosition
     {
-        if (_sessionChannel != null)
-            _sessionChannel.OnSessionUpdated += ExecuteRefreshBodyReference;
-
-        ExecuteRefreshBodyReference();
+        get
+        {
+            if (_bodyTransform != null)
+            {
+                return new Vector2Int(
+                    Mathf.RoundToInt(_bodyTransform.position.x),
+                    Mathf.RoundToInt(_bodyTransform.position.y)
+                );
+            }
+            return Vector2Int.zero;
+        }
     }
 
-    private void OnDisable()
-    {
-        if (_sessionChannel != null)
-            _sessionChannel.OnSessionUpdated -= ExecuteRefreshBodyReference;
-    }
+    public IMapProvider MapProvider => null;
 
     private void Update()
     {
-        if (_bodyTransform == null || Time.time < _nextThinkTime) return;
+        // 🚀 แก้ไข null propagation ตรง ExecuteRefreshBody
+        if (_bodyTransform == null)
+        {
+            ExecuteRefreshBody();
+            return;
+        }
+
+        if (Time.time < _nextThinkTime) return;
 
         _nextThinkTime = Time.time + _thinkInterval;
         ExecuteThink();
     }
 
-    #endregion //Unity Lifecycle
-
-    #region Private Logic
-
-    private void ExecuteRefreshBodyReference()
-    {
-        if (_sessionChannel == null) return;
-        _bodyTransform = _sessionChannel.GetBody(_targetToDrive);
-    }
-
-    /// <summary>
-    /// <para> (TH) : ประมวลผลความคิดบอท โดยเลือกระหว่างการหนีระเบิดหรือเดินไปเป้าหมาย </para>
-    /// </summary>
     private void ExecuteThink()
     {
+        // 🚀 เช็ค Channel แบบปลอดภัย
+        if (_mapChannel == null || _bodyTransform == null) return;
+
         Vector2Int currentPos = CurrentGridPosition;
         Vector2Int nextMove;
 
-        // 1. ตรวจสอบว่าพื้นที่ปัจจุบันอันตรายหรือไม่
-        if (_mapManager.IsDangerous(currentPos))
+        // ถาม Channel ว่า "ตรงนี้อันตรายไหม?"
+        if (_mapChannel.IsDangerous(currentPos))
         {
-            // ถ้าพิกัดที่กำลังหนีไปยังไม่ปลอดภัย หรือยังไม่มีเป้าหมายหนี
-            if (!_isFleeing || _mapManager.IsDangerous(_currentSafeTarget))
+            // ถ้าเป้าหมายเดิมที่กำลังหนีไปมันเกิดอันตรายขึ้นมาใหม่ หรือยังไม่มีเป้าหมายหนี
+            if (!_isFleeing || _mapChannel.IsDangerous(_currentSafeTarget))
             {
                 _currentSafeTarget = ExecuteFindSafeSpot(currentPos);
                 _isFleeing = true;
             }
-
-            nextMove = ((IPathfindable)this).GetNextPath(_currentSafeTarget);
+            nextMove = PathfindAbility<BotController>.Execute(this, _currentSafeTarget);
         }
         else
         {
-            // พื้นที่ปัจจุบันปลอดภัยแล้ว กลับสู่โหมดเดินตามเป้าหมายปกติ
             _isFleeing = false;
-            nextMove = ((IPathfindable)this).GetNextPath(_targetGridPos);
+            nextMove = PathfindAbility<BotController>.Execute(this, _targetGridPos);
         }
 
-        // 2. คำนวณทิศทางส่งให้ MoveController
+        // คำนวณทิศทาง
         Vector2 direction = new Vector2(
             nextMove.x - _bodyTransform.position.x,
             nextMove.y - _bodyTransform.position.y
         );
 
-        // 3. ยิง Signal ผ่าน EventBus
-        EventBus.Instance.Publish(new CharacterAction(
-            _targetToDrive,
-            ActionType.Move,
-            new MoveInputEvent(direction)
-        ));
+        // ยิง Signal บอกตัวละครให้เดินผ่าน EventBus
+        if (EventBus.Instance != null)
+        {
+            EventBus.Instance.Publish<ISignal>(new CharacterAction(
+                _targetToDrive,
+                ActionType.Move,
+                new MoveInputEvent(direction)
+            ));
+        }
     }
 
-    /// <summary>
-    /// <para> (TH) : อัลกอริทึมค้นหาช่องที่ใกล้ที่สุดที่ IsWalkable และ !IsDangerous </para>
-    /// </summary>
     private Vector2Int ExecuteFindSafeSpot(Vector2Int origin)
     {
-        Queue<Vector2Int> queue = new Queue<Vector2Int>();
-        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+        if (_mapChannel == null) return origin;
+
+        Queue<Vector2Int> queue = new();
+        HashSet<Vector2Int> visited = new();
 
         queue.Enqueue(origin);
         visited.Add(origin);
 
-        // ค้นหาแบบ BFS วงกว้างออกไปเรื่อยๆ จนกว่าจะเจอที่ปลอดภัย
-        int searchLimit = 50; // กัน Infinite Loop
-        int count = 0;
-
-        while (queue.Count > 0 && count < searchLimit)
+        int limit = 50; // กัน Infinite Loop กรณีหาที่ปลอดภัยไม่เจอจริง ๆ
+        while (queue.Count > 0 && limit-- > 0)
         {
-            Vector2Int current = queue.Dequeue();
-            count++;
+            Vector2Int curr = queue.Dequeue();
 
-            if (!_mapManager.IsDangerous(current)) return current;
+            // ถาม Channel: "ปลอดภัยยัง?"
+            if (!_mapChannel.IsDangerous(curr)) return curr;
 
-            Vector2Int[] neighbors = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-            foreach (var dir in neighbors)
+            foreach (var dir in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
             {
-                Vector2Int neighbor = current + dir;
-                if (_mapManager.IsWalkable(neighbor) && !visited.Contains(neighbor))
+                Vector2Int next = curr + dir;
+
+                // ถาม Channel: "เดินได้ไหม?" และยังไม่เคยไป
+                if (_mapChannel.IsWalkable(next) && !visited.Contains(next))
                 {
-                    queue.Enqueue(neighbor);
-                    visited.Add(neighbor);
+                    queue.Enqueue(next);
+                    visited.Add(next);
                 }
             }
         }
-
-        return origin; // ถ้าหาไม่เจอจริงๆ ให้ยืนที่เดิม (หรืออาจจะสุ่มเดิน)
+        return origin;
     }
 
-    private Vector2Int ExecuteGetNextPath(Vector2Int target)
+    private void ExecuteRefreshBody()
     {
-        return PathfindAbility<BotController>.Execute(this, target);
+        // 🚀 เปลี่ยนจาก _sessionChannel?.GetBody เป็นการเช็ค if
+        if (_sessionChannel != null)
+        {
+            _bodyTransform = _sessionChannel.GetBody(_targetToDrive);
+        }
     }
 
-    #endregion //Private Logic
+    Vector2Int IPathfindable.GetNextPath(Vector2Int target) => PathfindAbility<BotController>.Execute(this, target);
 }

@@ -40,6 +40,8 @@ public sealed class BombTriggerSensor : MonoBehaviour
         // คำนวณตำแหน่ง Grid จากตำแหน่งปัจจุบันของ Sensor
         Vector3Int gridPos = new(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
 
+        Debug.Log($"[BombTriggerSensor] Detected collision at Grid Position: {gridPos} with {other.gameObject.name}");
+
         // ส่งสัญญาณผ่าน Channel เพื่อให้ Manager ที่เกี่ยวข้องนำไปจัดการต่อ
         _bombChannel.RaiseExplosionHit(gridPos, other);
     }

@@ -1,7 +1,7 @@
 ﻿using Genoverrei.DesignPattern;
 
 [RequireComponent(typeof(MoveController))]
-public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IEventListener
+public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
 {
     #region Variable
 
@@ -25,26 +25,19 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IE
 
     private void OnEnable()
     {
-        EventBus.Instance.Subscribe<CharacterAction>(OnHandleCharacterAction);
+        EventBus.Instance.Subscribe<ISignal>(OnHandleSignal);
     }
 
     private void OnDisable()
     {
         if (EventBus.Instance == null) return;
-        EventBus.Instance.Unsubscribe<CharacterAction>(OnHandleCharacterAction);
+        EventBus.Instance.Unsubscribe<ISignal>(OnHandleSignal);
     }
 
     #endregion //Unity Lifecycle
 
     #region Event Handlers
 
-    private void OnHandleCharacterAction(CharacterAction action)
-    {
-        if (action.SignalTarget != _myCharacterId && action.SignalTarget != Character.All) return;
-        OnHandleSignal(action);
-    }
-
-    public void OnHandleEvent(IEvent eventData) { }
 
     public void OnHandleSignal(ISignal signal)
     {

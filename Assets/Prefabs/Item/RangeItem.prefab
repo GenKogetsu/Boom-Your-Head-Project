@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5507764836266058103}
   - component: {fileID: -2782378792229735545}
   m_Layer: 12
-  m_Name: Range
+  m_Name: RangeItem
   m_TagString: ExplosionRangeItem
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

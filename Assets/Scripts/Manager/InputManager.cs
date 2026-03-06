@@ -81,10 +81,11 @@ public sealed class InputManager : MonoBehaviour
     {
         if (_sessionData == null) return;
 
+        // สร้างข้อมูล action
         var signal = new CharacterAction(target, actionType, subEvent);
 
-        // ส่งขึ้น Bus กลาง ทุกคนที่ Subscribe ไว้จะได้ยินพร้อมกัน
-        EventBus.Instance.Publish(signal);
+        // 🚀 ต้องใส่ <ISignal> ตรงนี้เพื่อให้มันไปโผล่ที่ Listener ที่รอฟัง ISignal อยู่ครับ
+        EventBus.Instance.Publish<ISignal>(signal);
 
 #if UNITY_EDITOR
         LogAction(signal);

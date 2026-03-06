@@ -428,6 +428,54 @@ Transform:
   - {fileID: 1832812776}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &513070860
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 513070862}
+  - component: {fileID: 513070861}
+  m_Layer: 0
+  m_Name: ObjectPoolManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &513070861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513070860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f56a22873f774e429057c3cb13ee697, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Genoverrei.DesignPattern.ObjectPoolManager
+  _poolTables:
+  - {fileID: 11400000, guid: 8c4226e8c2d134347a0bac11212999bd, type: 2}
+  - {fileID: 11400000, guid: 1824c574e948f8f41b693aae2603daaf, type: 2}
+  - {fileID: 11400000, guid: 0d22b2bb333a31f4bbf394f4d25cc7c5, type: 2}
+--- !u!4 &513070862
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513070860}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.48439, y: -7.60809, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &514366525
 GameObject:
   m_ObjectHideFlags: 0
@@ -1510,11 +1558,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b238ba0c55893c743bf732e1f846ecd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotController
+  _mapChannel: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
   _sessionChannel: {fileID: 11400000, guid: 5562627c1c7866b4690bdfddaffe3194, type: 2}
   _targetToDrive: 0
-  _mapManager: {fileID: 1656130817}
-  _targetGridPos: {x: 0, y: 0}
   _thinkInterval: 0.2
+  _targetGridPos: {x: 0, y: 0}
 --- !u!4 &1114871838
 Transform:
   m_ObjectHideFlags: 0
@@ -2067,10 +2115,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6097fbcffde04684180088a46012e8ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BombManager
+  _mapChannel: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
   _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
-  _mapManager: {fileID: 1656130817}
-  _bombPoolKey: {fileID: 645362926042336693, guid: e10230ffd5e90c3489946b2652130401, type: 3}
-  _explosionPoolKey: {fileID: 2488732353793296490, guid: 7d7e9c7ce1308484e863a8b4489e090f, type: 3}
+  _bombPrefab: {fileID: 645362926042336693, guid: e10230ffd5e90c3489946b2652130401, type: 3}
+  _explosionPrefab: {fileID: 2488732353793296490, guid: 7d7e9c7ce1308484e863a8b4489e090f, type: 3}
   _bombLayer:
     serializedVersion: 2
     m_Bits: 2048
@@ -2356,7 +2404,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterActionListener
   _myCharacterId: 1
   _moveController: {fileID: 1579916631}
-  _bombSpawnChannel: {fileID: 11400000, guid: b17f2adb210103a4f8f6b99710f59768, type: 2}
+  _bombSpawnChannel: {fileID: 0}
 --- !u!1 &1647331267
 GameObject:
   m_ObjectHideFlags: 0
@@ -2616,20 +2664,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd1e0d1bb0a76b44fb5daee7ddec84fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
+  _mapChannel: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
   _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
-  _mapSize: {x: 16, y: 16}
-  _mapOffset: {x: 0, y: 0}
   _solidTilemaps:
   - {fileID: 6421736624179222574}
   - {fileID: 5445845719167433291}
   _destructibleTilemaps:
   - {fileID: 5364185884543106481}
-  _dropRate: 30
-  _itemPrefabs:
-  - {fileID: 2564380002654690261, guid: 6e7d92c604bca2c4aaa413a9d579652e, type: 3}
-  - {fileID: 2564380002654690261, guid: c1f0a088d60d07f4cab08a76946d75a0, type: 3}
-  - {fileID: 2564380002654690261, guid: e5c30de0d75c2fb4e90cc9097f804492, type: 3}
-  - {fileID: 2564380002654690261, guid: 89b4d76e5128be547946fd99bcdab913, type: 3}
 --- !u!1 &1658982200
 GameObject:
   m_ObjectHideFlags: 0
@@ -6008,8 +6049,7 @@ PrefabInstance:
       propertyPath: _hitEffectPrefab
       value: 
       objectReference: {fileID: 399485484}
-    m_RemovedComponents:
-    - {fileID: 2556370318441841133, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -15369,6 +15409,7 @@ SceneRoots:
   - {fileID: 8319929738039335117}
   - {fileID: 1656130816}
   - {fileID: 1463040899}
+  - {fileID: 513070862}
   - {fileID: 1114871838}
   - {fileID: 4119240701559093974}
   - {fileID: 1088900297805850411}

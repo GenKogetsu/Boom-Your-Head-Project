@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -1225257152874426369}
   - component: {fileID: 23401705192529169}
   m_Layer: 12
-  m_Name: Speed
+  m_Name: SpeedItem
   m_TagString: SpeedItem
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
