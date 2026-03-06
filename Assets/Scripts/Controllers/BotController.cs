@@ -1,12 +1,8 @@
 ﻿using UnityEngine;
 using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
-using BombGame.Manager;
-using BombGame.RecordEventSpace;
-using BombGame.EnumSpace;
 using System.Collections.Generic;
-
-namespace BombGame.Controller;
+using NaughtyAttributes;
 
 /// <summary>
 /// <para> Summary : </para>
@@ -27,6 +23,8 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
     [Header("Navigation & Logic")]
     [SerializeField] private MapManager _mapManager;
+
+    [ReadOnly]
     [SerializeField] private Vector2Int _targetGridPos;
     [SerializeField] private float _thinkInterval = 0.2f;
 

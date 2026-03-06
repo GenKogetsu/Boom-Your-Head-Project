@@ -1,15 +1,5 @@
-﻿using UnityEngine;
-using Genoverrei.DesignPattern;
-using BombGame.EnumSpace;
-using BombGame.RecordEventSpace;
+﻿using Genoverrei.DesignPattern;
 
-namespace BombGame.Controller;
-
-/// <summary>
-/// <para> Summary : </para>
-/// <para> (TH) : ตัวดักฟังคำสั่งและเหตุการณ์ โดยรับฟังก์ชันตรงเข้า EventBus แบบไม่ต้องใช้ Binding </para>
-/// <para> (EN) : Listener for commands and events, subscribing directly to EventBus without Binding. </para>
-/// </summary>
 [RequireComponent(typeof(MoveController))]
 public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IEventListener
 {
@@ -21,10 +11,8 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IE
     [Header("Local Controllers")]
     [SerializeField] private MoveController _moveController;
 
-    [Header("Event Channels (Broadcaster)")]
+    [Header("Event Channels")]
     [SerializeField] private BombSpawnChannelSO _bombSpawnChannel;
-
-    // ลบ _eventBinding ทิ้งไปได้เลยครับ ไม่ต้องใช้แล้ว!
 
     #endregion //Variable
 
@@ -32,55 +20,42 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IE
 
     private void OnValidate()
     {
-        if (_moveController == null)  _moveController = this.GetComponent<MoveController>();
-
-
+        if (_moveController == null) _moveController = GetComponent<MoveController>();
     }
 
     private void OnEnable()
     {
-        // ระบุ Type <IEvent> ให้ชัดเจน แล้วโยนฟังก์ชัน OnHandleEvent เข้าไปตรงๆ เลยครับ กริบ!
-        EventBus.Instance.Subscribe<IEvent>(OnHandleEvent);
+        EventBus.Instance.Subscribe<CharacterAction>(OnHandleCharacterAction);
     }
 
     private void OnDisable()
     {
-        // ยกเลิกก็ใช้การโยนฟังก์ชันเดิมเข้าไปตรงๆ
-        EventBus.Instance.Unsubscribe<IEvent>(OnHandleEvent);
+        if (EventBus.Instance == null) return;
+        EventBus.Instance.Unsubscribe<CharacterAction>(OnHandleCharacterAction);
     }
 
     #endregion //Unity Lifecycle
 
-    #region Interface Implementation (IEventListener)
+    #region Event Handlers
 
-    public void OnHandleEvent(IEvent eventData)
+    private void OnHandleCharacterAction(CharacterAction action)
     {
-        switch (eventData)
-        {
-            case ISignal signal:
-                OnHandleSignal(signal);
-                break;
-
-            case BombPlantedEvent bombEvent:
-                // TODO: บอทคำนวณการหนี
-                break;
-        }
+        if (action.SignalTarget != _myCharacterId && action.SignalTarget != Character.All) return;
+        OnHandleSignal(action);
     }
 
-    #endregion //Interface Implementation
-
-    #region Interface Implementation (ISignalListener)
+    public void OnHandleEvent(IEvent eventData) { }
 
     public void OnHandleSignal(ISignal signal)
     {
-        if (signal.SignalTarget != _myCharacterId) return;
-
+        Debug.Log($"[CharacterActionListener] Received signal: {signal.Action} for {_myCharacterId}");
         switch (signal.Action)
         {
             case ActionType.Move:
                 if (signal.Event is MoveInputEvent moveData && _moveController != null)
                 {
-                    _moveController.SetMoveDirection(moveData.Direction);
+                    // 🚀 โยนเข้าสมองหลัก (TileMoveAbility) ผ่านฟังก์ชัน Move ของจริง! ไม่มีการ Bypass แล้ว!
+                    _moveController.Move(moveData.Direction);
                 }
                 break;
 
@@ -90,7 +65,7 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IE
         }
     }
 
-    #endregion //Interface Implementation
+    #endregion //Event Handlers
 
     #region Private Logic
 
@@ -103,6 +78,7 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener, IE
             Mathf.RoundToInt(transform.position.y)
         );
 
+        Debug.Log($"[CharacterActionListener] Requesting bomb spawn at {gridPos} from {_myCharacterId}");
         _bombSpawnChannel.RaiseEvent(gridPos);
     }
 

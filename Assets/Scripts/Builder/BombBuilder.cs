@@ -1,7 +1,4 @@
 ﻿using UnityEngine;
-using BombGame.Controller;
-
-namespace BombGame.Logic;
 
 /// <summary>
 /// <para> Summary : </para>

@@ -1,9 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using BombGame.Manager;
-using BombGame.RecordEventSpace;
-
-namespace Genoverrei.Libary;
+using Genoverrei.DesignPattern;
 
 /// <summary>
 /// <para> Summary : </para>
@@ -19,7 +16,7 @@ public sealed class BombTriggerSensor : MonoBehaviour
     [SerializeField] private BombChannelSO _bombChannel;
 
     [Header("Lifecycle Settings")]
-    [SerializeField] private float _lifeTime = 0.5f;
+    [SerializeField] private AnimationClip _lifeTime;
 
     #endregion //Variable
 
@@ -28,7 +25,7 @@ public sealed class BombTriggerSensor : MonoBehaviour
     private void OnEnable()
     {
         // เริ่มนับถอยหลังการ Release กลับเข้า Pool
-        Invoke(nameof(ExecuteRelease), _lifeTime);
+        Invoke(nameof(ExecuteRelease), _lifeTime.length);
     }
 
     private void OnDisable()

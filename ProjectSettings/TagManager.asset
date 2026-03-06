@@ -26,7 +26,7 @@ TagManager:
   - Foreground
   - TileMapFloor
   - TileMapWall
-  - TileMapProp
+  - DestroyableLayer
   - ItemLayer
   - Bomb
   - Explosion

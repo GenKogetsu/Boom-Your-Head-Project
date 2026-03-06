@@ -1,6 +1,4 @@
-﻿namespace BombGame.Manager;
-
-/// <summary>
+﻿/// <summary>
 /// <para> Summary : </para>
 /// <para> (TH) : จัดการสถานะและกฎกติกาของการแข่งขันแบบไร้ Singleton </para>
 /// <para> (EN) : Manages match states and rules without a Singleton. </para>

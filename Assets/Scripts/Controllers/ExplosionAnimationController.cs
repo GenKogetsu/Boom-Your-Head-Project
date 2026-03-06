@@ -2,37 +2,30 @@
 using NaughtyAttributes;
 using BombGame.EnumSpace;
 
-namespace BombGame.Controller;
-
 /// <summary>
-/// <para> summary_ExplosionAnimationController </para>
-/// <para> (TH) : ควบคุมแอนิเมชันของไฟระเบิดในแต่ละส่วน (Start, Middle, End) และจัดการทิศทางตาม Logic ดั้งเดิม </para>
-/// <para> (EN) : Controls explosion animations for each part (Start, Middle, End) and handles rotation based on original logic. </para>
+/// <para> Summary : </para>
+/// <para> (TH) : ควบคุมแอนิเมชันของไฟระเบิดในแต่ละส่วน (Start, Middle, End) และจัดการทิศทาง </para>
+/// <para> (EN) : Controls explosion animations for each part (Start, Middle, End) and handles rotation. </para>
 /// </summary>
 public sealed class ExplosionAnimationController : MonoBehaviour
 {
     #region Variable
 
+    [Header("Animators")]
     [SerializeField] private Animator _startAnimator;
-
     [SerializeField] private Animator _middleAnimator;
-
     [SerializeField] private Animator _endAnimator;
 
-    [ReadOnly]
-    [SerializeField] private Vector2 _direction;
-
-    [ReadOnly]
-    [SerializeField] private BombPart _currentPart;
+    [Header("Runtime Status")]
+    [ReadOnly][SerializeField] private Vector2 _direction;
+    [ReadOnly][SerializeField] private BombPart _currentPart;
 
     #endregion //Variable
 
     #region Public Methods
 
     /// <summary>
-    /// <para> summary : </para>
     /// <para> (TH) : ตั้งค่าเริ่มต้นให้กับไฟระเบิด กำหนดทิศทาง และเปิดใช้งาน Animator ที่ถูกต้อง </para>
-    /// <para> (EN) : Initializes the explosion effect, sets direction, and activates the correct animator. </para>
     /// </summary>
     public void Setup(BombPart part, Vector2 direction)
     {
@@ -44,7 +37,7 @@ public sealed class ExplosionAnimationController : MonoBehaviour
     }
 
     /// <summary>
-    /// <para> (TH) : เลือกเปิด Animator ตามส่วนของไฟระเบิด (Start, Middle, End) และสั่ง Trigger แอนิเมชัน </para>
+    /// <para> (TH) : เลือกเปิด Animator ตามส่วนของไฟระเบิด และสั่ง Trigger แอนิเมชัน </para>
     /// </summary>
     public void SetActiveAnimator(BombPart part)
     {
@@ -71,14 +64,19 @@ public sealed class ExplosionAnimationController : MonoBehaviour
     }
 
     /// <summary>
-    /// <para> (TH) : ปรับมุมหมุนของ Object ตามทิศทางที่ได้รับจากการคำนวณ </para>
+    /// <para> (TH) : ปรับมุมหมุนของ Object ตามทิศทางที่ได้รับจากการคำนวณ (ใช้ 2D rotation) </para>
     /// </summary>
     public void SetDirection(Vector2 direction)
     {
-        if (direction == Vector2.zero) return;
+        // ถ้าเป็นจุด Start (direction = zero) ให้รีเซ็ตมุมเป็น 0
+        if (direction == Vector2.zero)
+        {
+            transform.rotation = Quaternion.identity;
+            return;
+        }
 
-        float angle = Mathf.Atan2(direction.y, direction.x);
-        transform.rotation = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, Vector3.forward);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     #endregion //Public Methods

@@ -1,6 +1,4 @@
-﻿namespace BombGame.Manager;
-
-/// <summary>
+﻿/// <summary>
 /// <para> Summary : </para>
 /// <para> (TH) : ผู้จัดการสมองบอท รัน FSM และส่งคำสั่งควบคุมบอทแต่ละตัวผ่าน Event Channel </para>
 /// <para> (EN) : Bot brain manager running FSM and sending bot control commands via Event Channel. </para>

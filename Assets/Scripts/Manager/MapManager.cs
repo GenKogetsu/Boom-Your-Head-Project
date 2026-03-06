@@ -5,8 +5,6 @@ using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 using BombGame.RecordEventSpace;
 
-namespace BombGame.Manager;
-
 /// <summary>
 /// <para> Summary : </para>
 /// <para> (TH) : ศูนย์กลางจัดการแผนที่ ทั้งการสแกน Grid เริ่มต้น, การทำลาย Tile และการสุ่มไอเทม </para>
@@ -20,8 +18,8 @@ public sealed class MapManager : Singleton<MapManager>, IMapProvider
     [SerializeField] private BombChannelSO _bombChannel;
 
     [Header("Map Configuration")]
-    [SerializeField] private Vector2Int _mapSize = new Vector2Int(15, 13);
-    [SerializeField] private Vector2Int _mapOffset = new Vector2Int(-7, -6);
+    [SerializeField] private Vector2Int _mapSize = new(16, 16);
+    [SerializeField] private Vector2Int _mapOffset = new(0, 0);
     [SerializeField] private List<Tilemap> _solidTilemaps = new();
     [SerializeField] private List<Tilemap> _destructibleTilemaps = new();
 

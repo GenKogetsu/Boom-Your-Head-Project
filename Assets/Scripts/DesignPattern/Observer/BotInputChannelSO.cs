@@ -1,4 +1,5 @@
 using System;
+using Genoverrei.DesignPattern;
 
 namespace BombGame.RecordEventSpace
 {

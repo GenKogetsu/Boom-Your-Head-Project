@@ -13,8 +13,7 @@ GameObject:
   - component: {fileID: 4051471656876344614}
   - component: {fileID: 3939017888894637701}
   - component: {fileID: 7012786872980809395}
-  - component: {fileID: 447089688627778850}
-  - component: {fileID: 1220457691102492883}
+  - component: {fileID: 645362926042336693}
   m_Layer: 13
   m_Name: Bomb
   m_TagString: Bomb
@@ -181,7 +180,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &447089688627778850
+--- !u!114 &645362926042336693
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -190,46 +189,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 3939017888894637700}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb7b17f5d97ebc9488bf239b1923d2ae, type: 3}
+  m_Script: {fileID: 11500000, guid: 5840e75ee3ae56845a89a34660cd2f40, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Bomb
-  Owner: {fileID: 0}
-  FuseTime: {fileID: 0}
-  ExplosionPrefab: {fileID: 0}
-  ExplosionDamage: 0
-  ExplosionDuration: 0
-  ExplosionRadius: 0
-  SolidTilemaps: []
-  DestructibleTilemaps: []
-  HasExploded: 0
-  _itemPrefab:
-  - {fileID: 2564380002654690261, guid: 6e7d92c604bca2c4aaa413a9d579652e, type: 3}
-  - {fileID: 2564380002654690261, guid: c1f0a088d60d07f4cab08a76946d75a0, type: 3}
-  - {fileID: 2564380002654690261, guid: e5c30de0d75c2fb4e90cc9097f804492, type: 3}
-  - {fileID: 2564380002654690261, guid: 89b4d76e5128be547946fd99bcdab913, type: 3}
-  _dropRate: 100
---- !u!114 &1220457691102492883
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3939017888894637700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f722ae145ef06764ca1325820d1f9ca0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BombSnapper
-  _bomb: {fileID: 447089688627778850}
-  _rb2: {fileID: 4051471656876344614}
-  _bombFuseTime: {fileID: 7400000, guid: bcd702cf82a75d343aaa991d1b02ed82, type: 2}
-  _velocityTarget: 0.5
-  _snapSpeed: 10
-  _percentToSnap: 0.75
-  _liftTime: 0
-  _panningPrepare: 0
-  _canPrepare: 1
-  _isSnapping: 0
-  _obstacleLayer:
-    serializedVersion: 2
-    m_Bits: 3072
+  m_EditorClassIdentifier: Assembly-CSharp::BombController
+  _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
+  _rigidbody: {fileID: 4051471656876344614}
+  _collider: {fileID: 3939017888894637701}
+  _animator: {fileID: 7012786872980809395}
+  _noncriticalClip: {fileID: 7400000, guid: bcd702cf82a75d343aaa991d1b02ed82, type: 2}
+  _criticalClip: {fileID: 7400000, guid: c915a95ed9a0b57438a7d855db4c670f, type: 2}
+  _ownerName: 0
+  _gridPosition: {x: 0, y: 0}
+  _radius: 0
+  _lifeTime: 0
+  _isExploded: 0

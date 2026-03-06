@@ -2,13 +2,9 @@
 global using System.Collections;
 global using System.Collections.Generic;
 global using UnityEngine;
-global using Genoverrei.DesignPattern;
 global using BombGame.EnumSpace;
 global using BombGame.RecordEventSpace;
-global using BombGame.Manager;
-global using BombGame.Controller;
 global using BombGame.Ability;
-global using BombGame.Logic;
 global using BombGame.Data;
 global using BombGame.StateSpace;
 global using BombGame.StrategySpace;

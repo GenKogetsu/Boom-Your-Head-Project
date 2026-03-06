@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: GamaData
   m_EditorClassIdentifier: Assembly-CSharp::GameSessionData
   _playerCount: 4
-  _player1Character: 1
-  _player2Character: 2
+  _firstPlayerCharacter: 1
+  _secondPlayerCharacter: 2
   _currentStageIndex: 4

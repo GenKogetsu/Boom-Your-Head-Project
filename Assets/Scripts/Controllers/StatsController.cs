@@ -3,8 +3,6 @@ using NaughtyAttributes;
 using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 
-namespace BombGame.Logic;
-
 /// <summary>
 /// <para> summary_StatsController </para>
 /// <para> (TH) : ตัวจัดการค่าสถานะของตัวละคร รวมถึงระบบพลังชีวิต การรับดาเมจ และสถานะอมตะชั่วคราว </para>

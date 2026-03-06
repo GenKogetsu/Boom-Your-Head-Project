@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5326297837759534371}
   - component: {fileID: 2090009655494765197}
   - component: {fileID: 5471574753439276012}
-  - component: {fileID: 3462836361120141660}
+  - component: {fileID: 3915522306062370716}
   m_Layer: 3
   m_Name: Ryuwen
   m_TagString: LivingThings
@@ -82,6 +82,9 @@ MonoBehaviour:
   _characterSprite: {fileID: 6724453455426141197}
   _characterRigidbody: {fileID: 777314106568944619}
   _characterCollider: {fileID: 1610054739873472829}
+  _invincibilityTime: 1.2
+  _flashSpeed: 15
+  _hitEffectPrefab: {fileID: 0}
   _isInvincible: 0
   _currentHp: 0
   _currentAtk: 0
@@ -101,18 +104,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecf0ebe5ff8186544977a8ad1a7731cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MoveController
-  _stats: {fileID: 5326297837759534371}
-  _rb2: {fileID: 777314106568944619}
-  _moveInputValue: {x: 0, y: 0}
-  _isMoving: 0
-  _targetPosition: {x: 0, y: 0}
-  LastMoveDirection: {x: 0, y: 0}
   _collisionLayer:
     serializedVersion: 2
     m_Bits: 3072
-  _collisionCheckSize: {x: 0.95, y: 0.95}
-  _offsetX: 0
-  _offsetY: 0
+  _rigidbody: {fileID: 777314106568944619}
+  _stats: {fileID: 5326297837759534371}
+  _lastMoveDirection: {x: 0, y: -1}
 --- !u!114 &5471574753439276012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -127,28 +124,42 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationController
   _moveController: {fileID: 2090009655494765197}
   _characterAnimator: {fileID: 2663885626087953671}
---- !u!114 &3462836361120141660
-MonoBehaviour:
+--- !u!58 &3915522306062370716
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 671267856186993510}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5840e75ee3ae56845a89a34660cd2f40, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BombController
-  _stats: {fileID: 5326297837759534371}
-  _bombPrefab: {fileID: 447089688627778850, guid: e10230ffd5e90c3489946b2652130401, type: 3}
-  _bombFuseTime: {fileID: 7400000, guid: bcd702cf82a75d343aaa991d1b02ed82, type: 2}
-  _explosionPrefab: {fileID: 4307435470556400126, guid: 7d7e9c7ce1308484e863a8b4489e090f, type: 3}
-  _explosionDuration: {fileID: 7400000, guid: c915a95ed9a0b57438a7d855db4c670f, type: 2}
-  _solidTilemaps:
-  - {fileID: 0}
-  - {fileID: 0}
-  _destructibleTilemaps:
-  - {fileID: 0}
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 0.5
 --- !u!1 &8001819086121827110
 GameObject:
   m_ObjectHideFlags: 0
@@ -229,7 +240,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -206752025
-  m_SortingLayer: 4
+  m_SortingLayer: 3
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: -957305376, guid: 1b50314240a7da04d9310aeb34e9570a, type: 3}

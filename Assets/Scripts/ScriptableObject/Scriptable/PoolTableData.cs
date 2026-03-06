@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-namespace Genoverrei.Libary;
+namespace Genoverrei.DesignPattern;
 
 /// <summary>
 /// <para> summary_PoolTableData </para>

@@ -1,120 +1,92 @@
-﻿using UnityEngine;
-using NaughtyAttributes;
-using Genoverrei.DesignPattern;
-using Genoverrei.Libary; // ดึงมาจาก Library ของพี่
-using BombGame.EnumSpace;
+﻿using NaughtyAttributes;
 
-namespace BombGame.Controller;
-
-/// <summary>
-/// <para> Summary : </para>
-/// <para> (TH) : ตัวควบคุมการเคลื่อนที่แบบ Grid-based ของตัวละคร โดยดึงค่าความเร็วจาก StatsController และรับคำสั่งจาก Listener </para>
-/// <para> (EN) : Grid-based movement controller, fetching speed from StatsController and receiving commands from Listener. </para>
-/// </summary>
-[RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(StatsController))]
+[RequireComponent(typeof(Rigidbody2D))]
 public sealed class MoveController : MonoBehaviour, ITileMoveable
 {
     #region Variable
+    [Header("Components")]
+    [ReadOnly][SerializeField] private StatsController _stats;
+    [ReadOnly][SerializeField] private Rigidbody2D _rb2;
 
-    // ไม่ต้องมี Identity และ EventBus แล้ว เพราะย้ายไปที่ CharacterActionListener หมดแล้วครับ กริบ!
+    [Header("State")]
+    [ReadOnly][SerializeField] private Vector2 _moveInputValue;
+    [ReadOnly][SerializeField] private bool _isMoving;
+    [ReadOnly][SerializeField] private Vector2 _targetPosition;
+    public Vector2 LastMoveDirection;
 
-    [Header("Movement Settings")]
+    [Header("Settings")]
     [SerializeField] private LayerMask _collisionLayer;
+    [SerializeField] private Vector2 _collisionCheckSize = new(0.9f, 0.9f);
+    [SerializeField] private Vector2 _offset = Vector2.zero;
 
-    [Header("Linked Components")]
-    [ReadOnly]
-    [SerializeField] private Rigidbody2D _rigidbody;
+    private Vector2 _lastDiscreteInput;
+    #endregion
 
-    [ReadOnly]
-    [SerializeField] private StatsController _stats;
-
-    [Header("Debug Info")]
-    [ReadOnly]
-    [SerializeField] private Vector2 _lastMoveDirection = Vector2.down;
-
-    private Vector2 _moveInput;
-
-    #endregion //Variable
-
-    #region ITileMoveable Properties
-
-    // ดึงค่าความเร็วจาก StatsController โดยตรง กริบๆ
-    public float MoveSpeed => _stats.CurrentSpeed;
-    public Rigidbody2D Rigidbody => _rigidbody;
-    public Vector2 TargetPosition { get; set; }
-    public bool IsMoving { get; set; }
+    #region ITileMoveable Implementation
+    public float MoveSpeed => _stats != null ? _stats.CurrentSpeed : 5f;
+    public Rigidbody2D Rigidbody => _rb2;
+    public Vector2 TargetPosition { get => _targetPosition; set => _targetPosition = value; }
+    public bool IsMoving { get => _isMoving; set => _isMoving = value; }
     public LayerMask CollisionLayer => _collisionLayer;
-    public Vector2 CollisionCheckSize => new(0.8f, 0.8f);
-    public Vector2 MoveInputValue => _moveInput;
-    public Vector2 LastMoveDirection => _lastMoveDirection;
+    public Vector2 CollisionCheckSize => _collisionCheckSize;
+    public Vector2 MoveInputValue => _moveInputValue;
+    public float OffsetX => _offset.x;
+    public float OffsetY => _offset.y;
 
-    #endregion //ITileMoveable Properties
+    public void Move(Vector2 input)
+    {
+        _moveInputValue = input;
+        if (input == Vector2.zero) return;
+
+        Vector2 currentDiscrete = TileMoveAbility.GetDiscreteDirection(input);
+        if (currentDiscrete != _lastDiscreteInput)
+        {
+            LastMoveDirection = currentDiscrete;
+            TileMoveAbility.ProcessMoveRequest(this);
+        }
+        _lastDiscreteInput = currentDiscrete;
+    }
+    #endregion
 
     #region Unity Lifecycle
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (_rigidbody == null) _rigidbody = GetComponent<Rigidbody2D>();
-        if (_stats == null) _stats = GetComponent<StatsController>();
-    }
-#endif
-
     private void Awake()
     {
-        // ทำการ Snap ตำแหน่งเข้า Grid ตั้งแต่เริ่มเกม
-        TargetPosition = TileMoveAbility<MoveController>.SnapToGrid(transform.position);
-        if (_rigidbody != null) _rigidbody.position = TargetPosition;
+        _targetPosition = TileMoveAbility.SnapToGrid(transform.position, _offset.x, _offset.y);
+        if (_rb2 != null) _rb2.position = _targetPosition;
+        LastMoveDirection = Vector2.down;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
-        // อัปเดตการเดินตามช่อง Grid ด้วย Library ของพี่
-        ((ITileMoveable)this).UpdateMovement(Time.deltaTime);
+        TileMoveAbility.ExecuteUpdate(this, Time.fixedDeltaTime);
     }
 
-    #endregion //Unity Lifecycle
-
-    #region Explicit Interface Implementation
-
-    void ITileMoveable.Move(Vector2 input) => ExecuteMove(input);
-
-    void ITileMoveable.UpdateMovement(float deltaTime) => TileMoveAbility<MoveController>.ExecuteUpdate(this, deltaTime);
-
-    #endregion //Explicit Interface Implementation
-
-    #region Public Methods
-
-    /// <summary>
-    /// <para> Summary : </para>
-    /// <para> (TH) : รับค่าทิศทางการเดินจาก Listener ภายนอก (แทนที่ OnHandleSignal ตัวเก่า) </para>
-    /// <para> (EN) : Receives movement direction from an external Listener (replaces the old OnHandleSignal). </para>
-    /// </summary>
-    public void SetMoveDirection(Vector2 direction)
+    private void OnValidate()
     {
-        ExecuteMove(direction);
+        if (_stats == null) _stats = GetComponent<StatsController>();
+        if (_rb2 == null) _rb2 = GetComponent<Rigidbody2D>();
     }
+    #endregion
 
-    #endregion //Public Methods
-
-    #region Private Logic
-
-    /// <summary>
-    /// <para> Summary : </para>
-    /// <para> (TH) : นำค่า Input มาอัปเดตทิศทาง เพื่อให้ระบบ ITileMoveable นำไปคำนวณการเดิน </para>
-    /// <para> (EN) : Updates direction with Input value for the ITileMoveable system to calculate movement. </para>
-    /// </summary>
-    private void ExecuteMove(Vector2 input)
+    #region Gizmos
+#if UNITY_EDITOR
+    private void OnDrawGizmos()
     {
-        _moveInput = input;
+        if (!Application.isPlaying) return;
+        Vector2 nextDir = TileMoveAbility.GetDiscreteDirection(_moveInputValue);
+        Vector2 checkPos = _targetPosition + nextDir;
+        bool isNextBlocked = _moveInputValue != Vector2.zero && TileMoveAbility.IsPositionOccupied(this, checkPos);
 
-        if (input != Vector2.zero)
+        Gizmos.color = _isMoving ? new Color(0, 1, 0, 0.3f) : (isNextBlocked ? new Color(1, 0, 0, 0.3f) : new Color(0, 1, 0, 0.3f));
+        Gizmos.DrawCube(_targetPosition, new Vector3(0.9f, 0.9f, 0.1f));
+
+        if (_moveInputValue != Vector2.zero)
         {
-            // ดึงทิศทางแบบ Discrete (ขึ้น, ลง, ซ้าย, ขวา)
-            _lastMoveDirection = TileMoveAbility<MoveController>.GetDiscreteDirection(input);
+            Gizmos.color = isNextBlocked ? Color.red : Color.blue;
+            Gizmos.DrawWireCube(checkPos, _collisionCheckSize);
         }
     }
-
-    #endregion //Private Logic
+#endif
+    #endregion
 }

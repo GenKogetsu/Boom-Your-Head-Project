@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace BombGame.Controller;
+using Genoverrei.DesignPattern;
 
 /// <summary>
 /// <para> Summary : </para>

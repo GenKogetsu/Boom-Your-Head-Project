@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
+using Genoverrei.DesignPattern;
 using NaughtyAttributes;
-
-namespace BombGame.Manager;
 
 /// <summary>
 /// <para> Summary : </para>
@@ -82,7 +81,7 @@ public sealed class InputManager : MonoBehaviour
     {
         if (_sessionData == null) return;
 
-        CharacterAction signal = new CharacterAction(target, actionType, subEvent);
+        var signal = new CharacterAction(target, actionType, subEvent);
 
         // ส่งขึ้น Bus กลาง ทุกคนที่ Subscribe ไว้จะได้ยินพร้อมกัน
         EventBus.Instance.Publish(signal);
