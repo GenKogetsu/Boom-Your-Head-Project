@@ -6,13 +6,14 @@ using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 using BombGame.RecordEventSpace;
 using BombGame.EnumSpace;
+using BombGame.Controller;
 
 namespace BombGame.Manager;
 
 /// <summary>
 /// <para> Summary : </para>
-/// <para> (TH) : ศูนย์กลางจัดการระบบระเบิด รับผิดชอบการงอกไฟ (Flame) และเอฟเฟกต์การระเบิด </para>
-/// <para> (EN) : Central bomb manager, responsible for flame propagation and explosion effects. </para>
+/// <para> (TH) : ศูนย์กลางจัดการระบบระเบิด รับผิดชอบการงอกไฟ (Flame) และส่งค่า Animation Length ให้กับระเบิด </para>
+/// <para> (EN) : Central bomb manager, responsible for flame propagation and passing animation length to bombs. </para>
 /// </summary>
 public sealed class BombManager : Singleton<BombManager>, ISignalListener
 {
@@ -23,6 +24,10 @@ public sealed class BombManager : Singleton<BombManager>, ISignalListener
 
     [Header("Dependencies")]
     [SerializeField] private MapManager _mapManager;
+
+    [Header("Animation Data")]
+    [Tooltip("ใส่คลิปท่า Idle ของระเบิดเพื่อใช้คำนวณเวลาถอยหลัง")]
+    [SerializeField] private AnimationClip _nonCriticalBombClip;
 
     [Header("Pool Keys")]
     [SerializeField] private string _bombPoolKey = "Bomb";
@@ -47,7 +52,6 @@ public sealed class BombManager : Singleton<BombManager>, ISignalListener
         if (_bombChannel != null)
         {
             _bombChannel.OnBombExploded += ExecuteHandleBombExplosion;
-            // รับฟังเหตุการณ์การชนจาก Sensor ผ่าน Channel แทนระบบ Register แบบเดิม
             _bombChannel.OnExplosionHit += ExecuteHandleFlameCollision;
         }
     }
@@ -97,7 +101,6 @@ public sealed class BombManager : Singleton<BombManager>, ISignalListener
         {
             Vector2Int targetPos = origin + (direction * i);
 
-            // ถามสถานะสิ่งกีดขวางจาก MapManager แทนการเช็ค Tilemap เอง
             if (_mapManager.IsSolid(targetPos)) break;
 
             if (_mapManager.IsDestructible(targetPos))
@@ -117,18 +120,13 @@ public sealed class BombManager : Singleton<BombManager>, ISignalListener
         if (effect != null) effect.Setup(part, direction);
     }
 
-    /// <summary>
-    /// <para> (TH) : จัดการการชนของไฟระเบิด โดยประสานงานกับ MapManager และทำ Chain Reaction </para>
-    /// </summary>
     private void ExecuteHandleFlameCollision(Vector3Int gridPos, Collider2D intruder)
     {
-        // แจ้ง MapManager ให้ทำลาย Tile และสุ่มไอเทม
         if (MapManager.Instance != null)
         {
             MapManager.Instance.ExecuteProcessDestruction(gridPos);
         }
 
-        // Chain Reaction: ถ้าระเบิดก้อนอื่นโดนไฟ ให้สั่งระเบิดทันที
         if (intruder.CompareTag("Bomb") && intruder.TryGetComponent<BombController>(out var nextBomb))
         {
             nextBomb.ForceExplode();
@@ -142,10 +140,17 @@ public sealed class BombManager : Singleton<BombManager>, ISignalListener
         Vector2 spawnPos = new Vector2(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
         if (Physics2D.OverlapBox(spawnPos, _collisionCheckSize, 0f, _bombLayer)) return;
 
+        // ดึงจาก Pool
         var bomb = ObjectPoolManager.Instance.Get<BombController>(_bombPoolKey, (Vector3)spawnPos, Quaternion.identity);
         if (bomb != null)
         {
-            new BombBuilder().SetRadius(stats.CurrentExplosionRange).Build(bomb, Vector2Int.RoundToInt(spawnPos), stats);
+            float clipTime = (_nonCriticalBombClip != null) ? _nonCriticalBombClip.length : 3f;
+
+            new BombBuilder()
+                .SetRadius(stats.CurrentExplosionRange)
+                .SetNonCriticalTimer(clipTime)
+                .Build(bomb, Vector2Int.RoundToInt(spawnPos), stats);
+
             stats.BombsRemaining--;
         }
     }
