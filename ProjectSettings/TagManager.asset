@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 3
+  tags:
+  - Manager
+  - Controller
+  - TileMap
+  - Folder
+  - LivingThings
+  - HpItem
+  - SpeedItem
+  - BombAmountItem
+  - ExplosionRangeItem
+  - Bomb
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - LivingThings
+  - Water
+  - UI
+  - Background
+  - Midground
+  - Foreground
+  - TileMapFloor
+  - TileMapWall
+  - TileMapProp
+  - ItemLayer
+  - Bomb
+  - Explosion
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: TileMap
+    uniqueID: 1542329495
+    locked: 0
+  - name: Bomb
+    uniqueID: 3447100011
+    locked: 0
+  - name: LivingThing
+    uniqueID: 4088215271
+    locked: 0
+  - name: Prop
+    uniqueID: 1651147195
+    locked: 0
+  m_RenderingLayers:
+  - Default
