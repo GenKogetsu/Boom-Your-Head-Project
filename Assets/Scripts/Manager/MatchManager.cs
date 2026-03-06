@@ -12,9 +12,6 @@ public sealed class MatchManager : MonoBehaviour
     [Header("Event Broadcasters")]
     [SerializeField] private MatchEventChannelSO _matchEventChannel;
 
-    [Header("Match Settings")]
-    [SerializeField] private float _matchDuration = 180f;
-
     private MatchState _currentState;
 
     #endregion //Variable

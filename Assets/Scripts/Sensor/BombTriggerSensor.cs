@@ -1,23 +1,25 @@
 ﻿using System;
 using UnityEngine;
 using BombGame.Manager;
+using BombGame.RecordEventSpace;
 
 namespace Genoverrei.Libary;
 
 /// <summary>
-/// <para> summary_BombTriggerSensor </para>
-/// <para> (TH) : เซนเซอร์ไฟระเบิดที่ส่งตำแหน่งของตัวเองเพื่อให้ Manager จัดการต่อ </para>
-/// <para> (EN) : Explosion sensor that sends its position for the Manager to process. </para>
+/// <para> Summary : </para>
+/// <para> (TH) : เซนเซอร์ไฟระเบิด แจ้งเหตุการณ์การชนผ่าน BombChannelSO แทนการใช้ Singleton </para>
+/// <para> (EN) : Explosion sensor notifying collision events via BombChannelSO instead of Singleton. </para>
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public sealed class BombTriggerSensor : MonoBehaviour
 {
     #region Variable
 
+    [Header("Observer")]
+    [SerializeField] private BombChannelSO _bombChannel;
+
     [Header("Lifecycle Settings")]
     [SerializeField] private float _lifeTime = 0.5f;
-
-    public event Action<Vector3Int, Collider2D> OnExplodeHit;
 
     #endregion //Variable
 
@@ -25,29 +27,24 @@ public sealed class BombTriggerSensor : MonoBehaviour
 
     private void OnEnable()
     {
-        if (BombManager.Instance != null)
-        {
-            BombManager.Instance.RegisterExplosionSensor(this);
-        }
-
+        // เริ่มนับถอยหลังการ Release กลับเข้า Pool
         Invoke(nameof(ExecuteRelease), _lifeTime);
     }
 
     private void OnDisable()
     {
-        if (BombManager.Instance != null)
-        {
-            BombManager.Instance.UnregisterExplosionSensor(this);
-        }
-
         CancelInvoke();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (_bombChannel == null) return;
+
         // คำนวณตำแหน่ง Grid จากตำแหน่งปัจจุบันของ Sensor
         Vector3Int gridPos = new(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
-        OnExplodeHit?.Invoke(gridPos, other);
+
+        // ส่งสัญญาณผ่าน Channel เพื่อให้ Manager ที่เกี่ยวข้องนำไปจัดการต่อ
+        _bombChannel.RaiseExplosionHit(gridPos, other);
     }
 
     #endregion //Unity Lifecycle
@@ -56,6 +53,7 @@ public sealed class BombTriggerSensor : MonoBehaviour
 
     private void ExecuteRelease()
     {
+        // ปล่อยตัวเซนเซอร์ (ที่ใช้ Animation ไฟ) กลับเข้า Pool
         ObjectPoolManager.Instance.Release("Explosion", this);
     }
 

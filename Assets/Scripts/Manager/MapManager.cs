@@ -1,117 +1,212 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.Tilemaps;
+using System.Collections.Generic;
 using Genoverrei.DesignPattern;
-using Genoverrei.Libary; // เรียกใช้ Library ที่เราเพิ่งรวมร่างกัน
+using Genoverrei.Libary;
 using BombGame.RecordEventSpace;
 
 namespace BombGame.Manager;
 
 /// <summary>
 /// <para> Summary : </para>
-/// <para> (TH) : ผู้จัดการแผนที่ ทำหน้าที่เป็น IMapProvider เพื่อให้ข้อมูลแก่ IPathfindable (บอท) </para>
-/// <para> (EN) : Map manager serving as IMapProvider to provide data for IPathfindable (Bots). </para>
+/// <para> (TH) : ศูนย์กลางจัดการแผนที่ ทั้งการสแกน Grid เริ่มต้น, การทำลาย Tile และการสุ่มไอเทม </para>
+/// <para> (EN) : Central map manager handling initial grid scanning, tile destruction, and item drops. </para>
 /// </summary>
-public sealed class MapManager : MonoBehaviour, IMapProvider, IEventListener
+public sealed class MapManager : Singleton<MapManager>, IMapProvider
 {
     #region Variable
 
-    [Header("Map Settings")]
+    [Header("Observer Channels")]
+    [SerializeField] private BombChannelSO _bombChannel;
+
+    [Header("Map Configuration")]
     [SerializeField] private Vector2Int _mapSize = new Vector2Int(15, 13);
+    [SerializeField] private Vector2Int _mapOffset = new Vector2Int(-7, -6);
+    [SerializeField] private List<Tilemap> _solidTilemaps = new();
+    [SerializeField] private List<Tilemap> _destructibleTilemaps = new();
 
-    // เก็บสิ่งกีดขวางถาวร (กำแพง/กล่อง)
-    private readonly HashSet<Vector2Int> _staticObstacles = new();
+    [Header("Item Drop Configuration")]
+    [Range(0f, 100f)]
+    [SerializeField] private float _dropRate = 30f;
+    [SerializeField] private List<GameObject> _itemPrefabs = new();
 
-    // เก็บตำแหน่งระเบิดที่วางอยู่ปัจจุบัน
-    private readonly Dictionary<Vector2Int, int> _activeBombs = new();
+    /// <summary>
+    /// <para> (TH) : พจนานุกรมเก็บสถานะการเดินผ่านได้ (True = ว่าง, False = มีสิ่งกีดขวาง) </para>
+    /// </summary>
+    private Dictionary<Vector2Int, bool> _walkableMap = new();
+
+    /// <summary>
+    /// <para> (TH) : เก็บตำแหน่งระเบิดปัจจุบันที่ยังไม่ระเบิด พร้อมรัศมีของมัน </para>
+    /// </summary>
+    private Dictionary<Vector2Int, int> _activeBombs = new Dictionary<Vector2Int, int>();
 
     #endregion //Variable
 
+
     #region Unity Lifecycle
 
-    private void Awake() => ExecuteInitializeMap();
-
-    private void OnEnable() => EventBus.Instance.Subscribe<IEvent>(OnHandleEvent);
-
-    private void OnDisable() => EventBus.Instance.Unsubscribe<IEvent>(OnHandleEvent);
-
-    #endregion //Unity Lifecycle
-
-    #region Interface Implementation (IEventListener)
-
-    public void OnHandleEvent(IEvent eventData)
+    /// <summary>
+    /// override Awake จาก Singleton เพื่อทำการ Initialize ข้อมูลแผนที่
+    /// </summary>
+    protected override void Awake()
     {
-        switch (eventData)
-        {
-            case BombPlantedEvent bombEvent:
-                ExecuteAddBomb(bombEvent.Pos);
-                break;
+        base.Awake();
+        ExecuteInitializeMap();
+    }
 
-                // TODO: ในอนาคตต้องมี BombExplodedEvent เพื่อลบระเบิดออก
-                // case BombExplodedEvent explodeEvent:
-                //     ExecuteRemoveBomb(explodeEvent.Pos);
-                //     break;
+    private void OnEnable()
+    {
+        if (_bombChannel != null)
+        {
+            _bombChannel.OnBombPlanted += HandleBombPlanted;
+            _bombChannel.OnBombExploded += HandleBombExploded;
         }
     }
 
-    #endregion //Interface Implementation
+    private void OnDisable()
+    {
+        if (_bombChannel != null)
+        {
+            _bombChannel.OnBombPlanted -= HandleBombPlanted;
+            _bombChannel.OnBombExploded -= HandleBombExploded;
+        }
+    }
 
-    #region Interface Implementation (IMapProvider)
+    #endregion //Unity Lifecycle
 
-    /// <summary>
-    /// <para> (TH) : เช็คว่าบอทเดินก้าวนี้ได้ไหม (ไม่ชนกำแพง/ไม่ทับระเบิด) </para>
-    /// </summary>
+
+    #region IMapProvider Implementation
+
     public bool IsWalkable(Vector2Int gridPos)
     {
-        // 1. เช็คขอบแมพ
-        if (gridPos.x < 0 || gridPos.x >= _mapSize.x || gridPos.y < 0 || gridPos.y >= _mapSize.y)
+        // 1. เช็คขอบแผนที่
+        if (gridPos.x < _mapOffset.x || gridPos.x >= _mapSize.x + _mapOffset.x ||
+            gridPos.y < _mapOffset.y || gridPos.y >= _mapSize.y + _mapOffset.y)
             return false;
 
-        // 2. เช็คกำแพงถาวร
-        if (_staticObstacles.Contains(gridPos))
+        // 2. เช็คจาก Cache แผนที่ (ถ้าไม่มีใน Dictionary หรือเป็น False แปลว่าเดินไม่ได้)
+        if (!_walkableMap.TryGetValue(gridPos, out bool isBaseWalkable) || !isBaseWalkable)
             return false;
 
-        // 3. เช็คว่ามีตัวระเบิดขวางทางอยู่ไหม (ระเบิดมีคอลไลเดอร์ เดินทับไม่ได้)
+        // 3. เช็คว่ามีระเบิดวางขวางอยู่ไหม (ระเบิดถือเป็นสิ่งกีดขวางชั่วคราว)
         if (_activeBombs.ContainsKey(gridPos))
             return false;
 
         return true;
     }
 
-    /// <summary>
-    /// <para> (TH) : เช็คว่าช่องนี้ "เสี่ยงตาย" ไหม (อยู่ในรัศมีระเบิดที่กำลังจะตู้ม) </para>
-    /// </summary>
     public bool IsDangerous(Vector2Int gridPos)
     {
-        // ถ้าช่องนี้คือที่วางระเบิด หรืออยู่ในรัศมีกากบาทของระเบิดใดๆ
+        // ตรวจสอบว่าพิกัดนี้อยู่ในรัศมีทำลายล้างของระเบิดก้อนไหนหรือไม่
         foreach (var bomb in _activeBombs)
         {
-            if (IsInsideExplosionRange(gridPos, bomb.Key)) return true;
+            Vector2Int bombPos = bomb.Key;
+            int radius = bomb.Value;
+
+            // เช็คแนวรัศมีกากบาท (Horizontal & Vertical)
+            bool inRangeX = gridPos.y == bombPos.y && Mathf.Abs(gridPos.x - bombPos.x) <= radius;
+            bool inRangeY = gridPos.x == bombPos.x && Mathf.Abs(gridPos.y - bombPos.y) <= radius;
+
+            if (inRangeX || inRangeY) return true;
         }
         return false;
     }
 
-    #endregion //Interface Implementation
+    #endregion //IMapProvider Implementation
 
-    #region Private Logic
 
-    private void ExecuteAddBomb(Vector2Int pos)
+    #region Public Methods (Tile Actions)
+
+    /// <summary>
+    /// <para> (TH) : ประมวลผลการทำลาย Tile พร้อมอัปเดตระบบนำทางและสุ่มของ </para>
+    /// </summary>
+    public void ExecuteProcessDestruction(Vector3Int pos)
     {
-        if (!_activeBombs.ContainsKey(pos)) _activeBombs.Add(pos, 3); // สมมติรัศมี 3 ช่อง
+        foreach (var map in _destructibleTilemaps)
+        {
+            if (map.HasTile(pos))
+            {
+                map.SetTile(pos, null);
+
+                // อัปเดตสถานะนำทางให้ช่องนี้เดินผ่านได้ (True)
+                ExecuteUpdateNavigationGrid((Vector3)(Vector3Int)pos, true);
+
+                TrySpawnItem((Vector3)(Vector3Int)pos);
+            }
+        }
     }
 
-    private bool IsInsideExplosionRange(Vector2Int target, Vector2Int bombPos)
+    public bool IsSolid(Vector2Int pos)
     {
-        // เช็คว่าอยู่ในแนวแกนเดียวกัน (กากบาท) และระยะไม่เกินรัศมี
-        bool inSameRow = target.y == bombPos.y && Mathf.Abs(target.x - bombPos.x) <= 3;
-        bool inSameCol = target.x == bombPos.x && Mathf.Abs(target.y - bombPos.y) <= 3;
-
-        return inSameRow || inSameCol;
+        foreach (var map in _solidTilemaps)
+            if (map.HasTile((Vector3Int)pos)) return true;
+        return false;
     }
 
+    public bool IsDestructible(Vector2Int pos)
+    {
+        foreach (var map in _destructibleTilemaps)
+            if (map.HasTile((Vector3Int)pos)) return true;
+        return false;
+    }
+
+    #endregion //Public Methods
+
+
+    #region Private Logic (Event Handlers)
+
+    private void HandleBombPlanted(Vector2Int pos, int radius)
+    {
+        if (!_activeBombs.ContainsKey(pos)) _activeBombs.Add(pos, radius);
+    }
+
+    private void HandleBombExploded(Vector2Int pos, int radius)
+    {
+        if (_activeBombs.ContainsKey(pos)) _activeBombs.Remove(pos);
+    }
+
+    #endregion //Private Logic
+
+
+    #region Private Logic (Internal Map Management)
+
+    /// <summary>
+    /// <para> (TH) : สแกนหา Tilemap ทั้งหมดเพื่อสร้างฐานข้อมูลการเดินเริ่มต้น </para>
+    /// </summary>
     private void ExecuteInitializeMap()
     {
-        // ตัวอย่าง: แอดกำแพงขอบแมพหรือเสาทึบ
-        // _staticObstacles.Add(new Vector2Int(1, 1));
+        _walkableMap.Clear();
+
+        // วนลูปตามขนาดแผนที่เพื่อตรวจสอบสถานะแต่ละช่อง
+        for (int x = _mapOffset.x; x < _mapSize.x + _mapOffset.x; x++)
+        {
+            for (int y = _mapOffset.y; y < _mapSize.y + _mapOffset.y; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+
+                // ถ้าช่องนี้ไม่มีกำแพงทึบและไม่มีกล่อง แปลว่าเดินได้ (True)
+                bool isBlocked = IsSolid(pos) || IsDestructible(pos);
+                _walkableMap.Add(pos, !isBlocked);
+            }
+        }
+    }
+
+    private void TrySpawnItem(Vector3 pos)
+    {
+        if (_itemPrefabs.Count == 0) return;
+
+        if (Random.Range(0f, 100f) <= _dropRate)
+        {
+            var itemIndex = Random.Range(0, _itemPrefabs.Count);
+            var itemPoolKey = _itemPrefabs[itemIndex].name;
+            ObjectPoolManager.Instance.Get<Transform>(itemPoolKey, pos, Quaternion.identity);
+        }
+    }
+
+    private void ExecuteUpdateNavigationGrid(Vector3 pos, bool isWalkable)
+    {
+        Vector2Int gridPos = new(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y));
+        _walkableMap[gridPos] = isWalkable;
     }
 
     #endregion //Private Logic
