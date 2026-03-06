@@ -1,99 +1,107 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Linq;
 using Genoverrei.DesignPattern;
+using Genoverrei.Libary;
+using BombGame.Manager;
+using BombGame.RecordEventSpace;
+using BombGame.EnumSpace;
 
-public class BotController : Singleton<BotController>
-{/*
-    [SerializeField] private PlayerManager _playerManager;
-    [SerializeField] private GameSessionData _sessionData;
+namespace BombGame.Controller;
 
-    [SerializeField] private float _decisionRateStage1 = 0.25f;
-    [SerializeField] private float _decisionRateStage2 = 0.12f;
+/// <summary>
+/// <para> Summary : </para>
+/// <para> (TH) : สมองบอทที่คอยถาม PlayerSessionChannel ว่าต้องเข้าไปขับตัวละครตัวไหน </para>
+/// <para> (EN) : Bot brain that queries PlayerSessionChannel to determine which character to drive. </para>
+/// </summary>
+public sealed class BotController : MonoBehaviour, IPathfindable
+{
+    #region Variable
 
-    private float _decisionRate;
+    [Header("Session Observer")]
+    [SerializeField] private PlayerSessionChannelSO _sessionChannel;
 
-    private void Start()
+    [Header("Assigned Target")]
+    [SerializeField] private Character _targetToDrive; // ระบุว่าบอทตัวนี้ถูกสร้างมาเพื่อขับ ID ไหน
+
+    private Transform _bodyTransform; // ร่างที่ได้มาจากการถาม Manager
+
+    [Header("Navigation")]
+    [SerializeField] private MapManager _mapManager;
+    [SerializeField] private Vector2Int _targetGridPos;
+
+    #endregion //Variable
+
+    #region IPathfindable Implementation
+
+    public Vector2Int CurrentGridPosition => _bodyTransform == null ? Vector2Int.zero : new Vector2Int(
+        Mathf.RoundToInt(_bodyTransform.position.x),
+        Mathf.RoundToInt(_bodyTransform.position.y)
+    );
+
+    public IMapProvider MapProvider => _mapManager;
+
+    Vector2Int IPathfindable.GetNextPath(Vector2Int target) => ExecuteGetNextPath(target);
+
+    #endregion //IPathfindable Implementation
+
+    #region Unity Lifecycle
+
+    private void OnEnable()
     {
-        AdjustDifficulty();
-        StartCoroutine(ThinkLoop());
+        if (_sessionChannel != null)
+            _sessionChannel.OnSessionUpdated += ExecuteRefreshBodyReference;
+
+        ExecuteRefreshBodyReference();
     }
 
-    private void AdjustDifficulty()
+    private void OnDisable()
     {
-        _decisionRate = _sessionData.CurrentStageIndex == 0
-            ? _decisionRateStage1
-            : _decisionRateStage2;
+        if (_sessionChannel != null)
+            _sessionChannel.OnSessionUpdated -= ExecuteRefreshBodyReference;
     }
 
-    private IEnumerator ThinkLoop()
+    private void Update()
     {
-        while (true)
-        {
-            ProcessAllBots();
-            yield return new WaitForSeconds(_decisionRate);
-        }
+        // ถ้ายังไม่มีร่างให้ขับ ก็ไม่ต้องคิดอะไร
+        if (_bodyTransform == null) return;
+
+        ExecuteThink();
     }
 
-    private void ProcessAllBots()
-    {
-        if (_playerManager.Bots.Count == 0) return;
-        if (_playerManager.Players.Count == 0) return;
+    #endregion //Unity Lifecycle
 
-        foreach (var bot in _playerManager.Bots)
-        {
-            HandleBot(bot);
-        }
+    #region Private Logic
+
+    /// <summary>
+    /// <para> (TH) : ถาม Manager ผ่าน ScObj ว่าตัวละครที่ฉันต้องขับ พร้อมหรือยัง </para>
+    /// </summary>
+    private void ExecuteRefreshBodyReference()
+    {
+        if (_sessionChannel == null) return;
+        _bodyTransform = _sessionChannel.GetBody(_targetToDrive);
     }
 
-    private void HandleBot(StatsController botStats)
+    private void ExecuteThink()
     {
-        // หา player ใกล้สุด
-        var target = _playerManager.Players
-            .OrderBy(p => Vector2.Distance(botStats.transform.position, p.transform.position))
-            .FirstOrDefault();
+        Vector2Int nextStep = ((IPathfindable)this).GetNextPath(_targetGridPos);
 
-        if (target == null) return;
+        // คำนวณทิศทางจากตำแหน่งปัจจุบันของร่างที่ "ยืม" มาขับ
+        Vector2 direction = new Vector2(
+            nextStep.x - _bodyTransform.position.x,
+            nextStep.y - _bodyTransform.position.y
+        );
 
-        Vector2 myPos = botStats.transform.position;
-        Vector2 playerPos = target.transform.position;
-
-        Vector2 dir = playerPos - myPos;
-
-        Vector2 moveDir =
-            TileMoveAbility<MoveController>.GetDiscreteDirection(dir);
-
-        SendMove(botStats.LivingName, moveDir);
-
-        float distance = Vector2.Distance(myPos, playerPos);
-
-        if (distance <= botStats.CurrentExplosionRange)
-        {
-            SendBomb(botStats.LivingName);
-        }
+        // ตะโกนสั่งผ่าน EventBus
+        EventBus.Instance.Publish(new CharacterAction(
+            _targetToDrive,
+            ActionType.Move,
+            new MoveInputEvent(direction)
+        ));
     }
 
-    private void SendMove(Character target, Vector2 dir)
+    private Vector2Int ExecuteGetNextPath(Vector2Int target)
     {
-        CharacterAction action = new()
-        {
-            SignalTarget = target,
-            Action = ActionType.Move,
-            Data = dir
-        };
-
-        //InputManager.Instance.SendBotSignal(action);
+        return PathfindAbility<BotController>.Execute(this, target);
     }
 
-    private void SendBomb(Character target)
-    {
-        CharacterAction action = new()
-        {
-            SignalTarget = target,
-            Action = ActionType.PlaceBomb,
-            Data = true
-        };
-
-        //InputManager.Instance.SendBotSignal(action);
-    }*/
+    #endregion //Private Logic
 }

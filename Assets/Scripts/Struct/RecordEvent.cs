@@ -33,7 +33,7 @@ public record struct MoveInputEvent(Vector2 Direction) : IEvent;
 /// <para> (TH) : เมื่อมีการวางระเบิดลงบน Grid </para>
 /// <para> (EN) : When a bomb is placed on the grid. </para>
 /// </summary>
-public record struct BombPlantedEvent(Vector2Int pos) : IEvent;
+public record struct BombPlantedEvent(Vector2Int Pos) : IEvent;
 
 /// <summary>
 /// <para> summary : </para>
