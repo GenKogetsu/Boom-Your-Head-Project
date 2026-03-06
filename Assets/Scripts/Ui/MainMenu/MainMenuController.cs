@@ -1,6 +1,7 @@
-using NaughtyAttributes;
+﻿using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Animator))]
@@ -19,17 +20,17 @@ public class MainMenuController : MonoBehaviour
     {
         if (!context.started) return;
 
-        _animator.SetTrigger("ToMainMenu");
+        ChangedState("ToMainMenu");
     }
 
     public void OnClickStartButton()
     {
-        _animator.SetTrigger("ToPlayeMode");
+        ChangedState("ToPlayeMode");
     }
 
     public void OnClickCreditButton()
     {
-        _animator.SetTrigger("ToCredit");
+        ChangedState("ToCredit");
     }
 
     public void OnClickExitButton()
@@ -38,5 +39,22 @@ public class MainMenuController : MonoBehaviour
         Application.Quit();
     }
 
+    public void OnClickSiglePlayer()
+    {
+        //เขียนค่าคนเดียว
+        SceneManager.LoadScene("ChooseCharacterScene");
+    }
 
+    public void OnClickMultiPlayer()
+    {
+        //เขียนค่าเล่นหลายคน
+        SceneManager.LoadScene("ChooseCharacterScene");
+    }
+
+    private void ChangedState(string state) 
+    {
+        _animator.SetBool("ToMainMenu", state == "ToMainMenu" ? true : false);
+        _animator.SetBool("ToPlayeMode", state == "ToPlayeMode" ? true : false);
+        _animator.SetBool("ToCredit", state == "ToCredit" ? true : false);
+    }
 }
