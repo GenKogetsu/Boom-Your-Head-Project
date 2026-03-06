@@ -1,5 +1,7 @@
 ﻿namespace Genoverrei.DesignPattern;
 
+public interface IEvent { }
+
 /// <summary>
 /// <para> Summary : </para>
 /// <para> (TH) : อินเตอร์เฟสสำหรับเหตุการณ์ที่ระบุเป้าหมายได้ </para>
@@ -12,12 +14,22 @@ public interface ISignal : IEvent
     IEvent Event { get; }
 }
 
+
+public interface IListener { }
+
+public interface IEventListener : IListener
+{
+    void OnHandleEvent(IEvent eventData);
+}
+
+
+
 /// <summary>
 /// <para> Summary : </para>
 /// <para> (TH) : อินเตอร์เฟสสำหรับ Listener ที่สามารถรับสัญญาณจาก ISignal ได้ </para>
 /// <para> (EN) : Interface for listeners that can receive signals from ISignal. </para>
 /// </summary>
-public interface ISignalListener
+public interface ISignalListener : IListener
 {
     /// <summary>
     /// <para> Summary : </para>

@@ -1,23 +1,23 @@
 ﻿using UnityEngine;
 using NaughtyAttributes;
 using Genoverrei.DesignPattern;
-using Genoverrei.Libary;
+using Genoverrei.Libary; // ดึงมาจาก Library ของพี่
+using BombGame.EnumSpace;
 
 namespace BombGame.Controller;
 
 /// <summary>
-/// <para> summary_MoveController </para>
-/// <para> (TH) : ตัวควบคุมการเคลื่อนที่หลักของตัวละครที่รองรับระบบ Signal และ Grid-based Movement </para>
-/// <para> (EN) : Main character movement controller supporting Signal system and Grid-based movement. </para>
+/// <para> Summary : </para>
+/// <para> (TH) : ตัวควบคุมการเคลื่อนที่แบบ Grid-based ของตัวละคร โดยดึงค่าความเร็วจาก StatsController และรับคำสั่งจาก Listener </para>
+/// <para> (EN) : Grid-based movement controller, fetching speed from StatsController and receiving commands from Listener. </para>
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(StatsController))]
-public class MoveController : MonoBehaviour, ITileMoveable, ISignalListener
+public sealed class MoveController : MonoBehaviour, ITileMoveable
 {
     #region Variable
 
-    [Header("Identity Settings")]
-    [SerializeField] private Character _identity;
+    // ไม่ต้องมี Identity และ EventBus แล้ว เพราะย้ายไปที่ CharacterActionListener หมดแล้วครับ กริบ!
 
     [Header("Movement Settings")]
     [SerializeField] private LayerMask _collisionLayer;
@@ -39,6 +39,7 @@ public class MoveController : MonoBehaviour, ITileMoveable, ISignalListener
 
     #region ITileMoveable Properties
 
+    // ดึงค่าความเร็วจาก StatsController โดยตรง กริบๆ
     public float MoveSpeed => _stats.CurrentSpeed;
     public Rigidbody2D Rigidbody => _rigidbody;
     public Vector2 TargetPosition { get; set; }
@@ -62,15 +63,16 @@ public class MoveController : MonoBehaviour, ITileMoveable, ISignalListener
 
     private void Awake()
     {
+        // ทำการ Snap ตำแหน่งเข้า Grid ตั้งแต่เริ่มเกม
         TargetPosition = TileMoveAbility<MoveController>.SnapToGrid(transform.position);
         if (_rigidbody != null) _rigidbody.position = TargetPosition;
     }
 
-    private void OnEnable() => EventBus.Instance.Subscribe<ISignal>(OnHandleSignal);
-
-    private void OnDisable() => EventBus.Instance.Unsubscribe<ISignal>(OnHandleSignal);
-
-    private void Update() => ((ITileMoveable)this).UpdateMovement(Time.deltaTime);
+    private void Update()
+    {
+        // อัปเดตการเดินตามช่อง Grid ด้วย Library ของพี่
+        ((ITileMoveable)this).UpdateMovement(Time.deltaTime);
+    }
 
     #endregion //Unity Lifecycle
 
@@ -84,26 +86,32 @@ public class MoveController : MonoBehaviour, ITileMoveable, ISignalListener
 
     #region Public Methods
 
-    public void OnHandleSignal(ISignal signal)
+    /// <summary>
+    /// <para> Summary : </para>
+    /// <para> (TH) : รับค่าทิศทางการเดินจาก Listener ภายนอก (แทนที่ OnHandleSignal ตัวเก่า) </para>
+    /// <para> (EN) : Receives movement direction from an external Listener (replaces the old OnHandleSignal). </para>
+    /// </summary>
+    public void SetMoveDirection(Vector2 direction)
     {
-        if (signal.SignalTarget == _identity || signal.SignalTarget == Character.All)
-        {
-            if (signal.Action == ActionType.Move && signal.Event is MoveInputEvent data)
-            {
-                ExecuteMove(data.Direction);
-            }
-        }
+        ExecuteMove(direction);
     }
 
     #endregion //Public Methods
 
     #region Private Logic
 
+    /// <summary>
+    /// <para> Summary : </para>
+    /// <para> (TH) : นำค่า Input มาอัปเดตทิศทาง เพื่อให้ระบบ ITileMoveable นำไปคำนวณการเดิน </para>
+    /// <para> (EN) : Updates direction with Input value for the ITileMoveable system to calculate movement. </para>
+    /// </summary>
     private void ExecuteMove(Vector2 input)
     {
         _moveInput = input;
+
         if (input != Vector2.zero)
         {
+            // ดึงทิศทางแบบ Discrete (ขึ้น, ลง, ซ้าย, ขวา)
             _lastMoveDirection = TileMoveAbility<MoveController>.GetDiscreteDirection(input);
         }
     }
