@@ -1,0 +1,405 @@
+fileFormatVersion: 2
+guid: fda3d795d34ffc14ab783deef3777eaa
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -9076971517055360128
+    second: MainMemu Ui _0
+  - first:
+      213: 5678634917179426952
+    second: MainMemu Ui _1
+  - first:
+      213: -6011372364392955191
+    second: MainMemu Ui _2
+  - first:
+      213: 2795687825649778359
+    second: MainMemu Ui _3
+  - first:
+      213: 7890052041943010111
+    second: MainMemu Ui _4
+  - first:
+      213: 1563246032003553119
+    second: MainMemu Ui _5
+  - first:
+      213: -8601585928530010969
+    second: MainMemu Ui _6
+  - first:
+      213: 4967401596788357712
+    second: MainMemu Ui _7
+  - first:
+      213: -1275092170611480788
+    second: MainMemu Ui _8
+  - first:
+      213: 429968200502552862
+    second: MainMemu Ui _9
+  - first:
+      213: -7388699941917721047
+    second: MainMemu Ui _10
+  - first:
+      213: 8167581543496971973
+    second: MainMemu Ui _11
+  - first:
+      213: -4333904982131288464
+    second: MainMemu Ui _12
+  - first:
+      213: 1876822997823807444
+    second: MainMemu Ui _13
+  - first:
+      213: 6484423950400142319
+    second: MainMemu Ui _14
+  - first:
+      213: 7985538269707509619
+    second: MainMemu Ui _15
+  - first:
+      213: -1889803814930532833
+    second: MainMemu Ui _16
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 200
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: SinglePlayerModeButton
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 1025
+        width: 605
+        height: 171
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 083a3914f7e180280800000000000000
+      internalID: -9076971517055360128
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameLogo
+      rect:
+        serializedVersion: 2
+        x: 928
+        y: 939
+        width: 845
+        height: 440
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8880c97de509ece40800000000000000
+      internalID: 5678634917179426952
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MutiPlayerModeButton
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 743
+        width: 605
+        height: 171
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c202c72fa0539ca0800000000000000
+      internalID: -6011372364392955191
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: StartButtonSprite
+      rect:
+        serializedVersion: 2
+        x: 994
+        y: 636
+        width: 606
+        height: 171
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7be3db6e3474cc620800000000000000
+      internalID: 2795687825649778359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AnyKeyIcon
+      rect:
+        serializedVersion: 2
+        x: 1786
+        y: 664
+        width: 663
+        height: 93
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3bcb5367881f7d60800000000000000
+      internalID: 7890052041943010111
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CreditButtonSprite
+      rect:
+        serializedVersion: 2
+        x: 997
+        y: 408
+        width: 605
+        height: 171
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e192bafdccd87f500800000000000000
+      internalID: 429968200502552862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Exit_Ui _12
+      rect:
+        serializedVersion: 2
+        x: 997
+        y: 182
+        width: 605
+        height: 171
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 076d4c97160ead3c0800000000000000
+      internalID: -4333904982131288464
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MoveIcon
+      rect:
+        serializedVersion: 2
+        x: 1908
+        y: 294
+        width: 214
+        height: 77
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 244cea59560654541a6642aa1a58947d
+      internalID: 1563246032003553119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SelectIcon
+      rect:
+        serializedVersion: 2
+        x: 2147
+        y: 294
+        width: 237
+        height: 77
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b600bb65008ab7f4b8a71d6b90acabaf
+      internalID: -8601585928530010969
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BackIcon
+      rect:
+        serializedVersion: 2
+        x: 2137
+        y: 378
+        width: 214
+        height: 77
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 551755e4b5a04d0479ed1608d9786308
+      internalID: 4967401596788357712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 6e372c26a21f2834f975166e8dd3b38e
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      AnyKeyIcon: 7890052041943010111
+      BackIcon: 4967401596788357712
+      CreditButtonSprite: 429968200502552862
+      Exit_Ui _12: -4333904982131288464
+      GameLogo: 5678634917179426952
+      MainMemu Ui _10: -7388699941917721047
+      MainMemu Ui _11: 8167581543496971973
+      MainMemu Ui _13: 1876822997823807444
+      MainMemu Ui _14: 6484423950400142319
+      MainMemu Ui _15: 7985538269707509619
+      MainMemu Ui _16: -1889803814930532833
+      MainMemu Ui _8: -1275092170611480788
+      MoveIcon: 1563246032003553119
+      MutiPlayerModeButton: -6011372364392955191
+      SelectIcon: -8601585928530010969
+      SinglePlayerModeButton: -9076971517055360128
+      StartButtonSprite: 2795687825649778359
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
