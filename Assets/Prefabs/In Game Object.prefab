@@ -141,9 +141,9 @@ PrefabInstance:
       value: Ryuwen
       objectReference: {fileID: 0}
     - target: {fileID: 2090009655494765197, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
-      propertyPath: _collisionLayer.m_Bits
-      value: 3072
-      objectReference: {fileID: 0}
+      propertyPath: _mapChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
     - target: {fileID: 3668039724578307482, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2
@@ -184,25 +184,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5326297837759534371, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
-      propertyPath: _characterCollider
-      value: 
-      objectReference: {fileID: 249008361359861580}
-    - target: {fileID: 6724453455426141197, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
-      propertyPath: m_SpriteSortPoint
-      value: 1
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 3915522306062370716, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
---- !u!70 &249008361359861580 stripped
-CapsuleCollider2D:
-  m_CorrespondingSourceObject: {fileID: 1610054739873472829, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
-  m_PrefabInstance: {fileID: 1525796170325247601}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2867606840548637675 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3668039724578307482, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}

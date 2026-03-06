@@ -2,39 +2,91 @@
 using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 
+/// <summary>
+/// <para> (TH) : เซนเซอร์ไฟระเบิด ตรวจจับการชนและใช้ PoolKey ในการคืนวัตถุกลับเข้าคลัง </para>
+/// </summary>
 public sealed class BombTriggerSensor : MonoBehaviour
 {
-    [SerializeField] private BombChannelSO _bombChannel;
-    [SerializeField] private AnimationClip _lifeTime;
-    [SerializeField] private LayerMask _mapLayer, _livingLayer, _itemLayer, _bombLayer;
+    #region Variable
 
-    private void OnEnable() => Invoke(nameof(ExecuteRelease), _lifeTime != null ? _lifeTime.length : 0.5f);
+    [Header("Pool Settings")]
+    [Tooltip("ลาก Prefab ลูกไฟต้นฉบับมาใส่ที่นี่ (เพื่อให้ชื่อ Key ตรงกับ PoolManager)")]
+    [SerializeField] private GameObject _poolKey;
+
+    [Header("Observer")]
+    [SerializeField] private BombChannelSO _bombChannel;
+
+    [Header("Lifecycle Settings")]
+    [SerializeField] private AnimationClip _lifeTime;
+
+    [Header("Layer Settings")]
+    [SerializeField] private LayerMask _mapLayer;
+    [SerializeField] private LayerMask _livingLayer;
+    [SerializeField] private LayerMask _itemLayer;
+    [SerializeField] private LayerMask _bombLayer;
+
+    #endregion //Variable
+
+    #region Unity Lifecycle
+
+    private void OnEnable()
+    {
+        // ⏳ ตั้งเวลาคืน Pool ตามความยาว Animation
+        float duration = (_lifeTime != null) ? _lifeTime.length : 0.5f;
+        Invoke(nameof(ExecuteRelease), duration);
+    }
+
     private void OnDisable() => CancelInvoke();
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        string layerName = LayerMask.LayerToName(other.gameObject.layer);
+        int hitBit = 1 << other.gameObject.layer;
+        Vector3Int gridPos = Vector3Int.RoundToInt(transform.position);
 
-        // 🚀 ใช้ Bitwise เช็ค Layer เพื่อความเร็ว
-        int bit = 1 << other.gameObject.layer;
+        // 1. 🛡️ เช็คเลเยอร์แผนที่
+        if ((hitBit & _mapLayer) != 0)
+        {
+            _bombChannel.RaiseExplosionHit(gridPos, other);
+            return;
+        }
 
-        if ((bit & _mapLayer) != 0) _bombChannel.RaiseExplosionHit(Vector3Int.RoundToInt(transform.position), other);
-        else if ((bit & _livingLayer) != 0) 
+        // 2. 💣 เช็คเลเยอร์ระเบิด
+        if ((hitBit & _bombLayer) != 0)
+        {
+            if (other.TryGetComponent<BombController>(out var bomb))
+                bomb.ForceExplode();
+            return;
+        }
+
+        // 3. 🍎 เช็คเลเยอร์ไอเทม
+        if ((hitBit & _itemLayer) != 0)
+        {
+            if (other.TryGetComponent<ItemController>(out var item))
+            {
+                item.DestroyMeWhenHit();
+            }
+            return;
+        }
+
+        // 4. 🤺 เช็คเลเยอร์สิ่งมีชีวิต
+        if ((hitBit & _livingLayer) != 0)
         {
             var stats = other.GetComponentInParent<ITakeDamageable>();
             stats?.TakeDamage(1);
         }
-        else if ((bit & _itemLayer) != 0)
-        {
-            // 🚀 ไอเทมก็ต้องใช้ชื่อตัวเองเป็น Key ในการกลับ Pool
-            string itemKey = other.gameObject.name.Replace("(Clone)", "").Trim();
-            ObjectPoolManager.Instance.Release(itemKey, other);
-        }
-        else if ((bit & _bombLayer) != 0)
-        {
-            if (other.TryGetComponent<BombController>(out var bomb)) bomb.ForceExplode();
-        }
     }
 
-    private void ExecuteRelease() => ObjectPoolManager.Instance.Release("Explosion", this);
+    #endregion //Unity Lifecycle
+
+    #region Private Logic
+
+    private void ExecuteRelease()
+    {
+        // 🚀 ดึงชื่อจาก Prefab ที่ลากมาใส่ หรือ Fallback ไปที่ชื่อตัวเองตัด Clone
+        string key = (_poolKey != null) ? _poolKey.name : gameObject.name.Replace("(Clone)", "").Trim();
+
+        ObjectPoolManager.Instance.Release(key, this);
+    }
+
+    #endregion //Private Logic
 }

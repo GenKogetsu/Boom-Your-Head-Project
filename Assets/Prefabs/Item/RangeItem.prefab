@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: -1987962040009563607}
   - component: {fileID: 5507764836266058103}
   - component: {fileID: -2782378792229735545}
+  - component: {fileID: -6619386312688188279}
   m_Layer: 12
   m_Name: RangeItem
   m_TagString: ExplosionRangeItem
@@ -189,3 +190,18 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.9, y: 0.9}
   m_EdgeRadius: 0
+--- !u!114 &-6619386312688188279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2564380002654690261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c7f3f780d589d742886665ce6442b87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemController
+  _poolkey: {fileID: -6619386312688188279}
+  _criticalClip: {fileID: 7400000, guid: c915a95ed9a0b57438a7d855db4c670f, type: 2}
+  _offset: 0.1

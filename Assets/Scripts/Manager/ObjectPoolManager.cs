@@ -17,14 +17,23 @@ namespace Genoverrei.DesignPattern
 
         public T Get<T>(string key, Vector3 position, Quaternion rotation) where T : Component
         {
-            if (!_poolDictionary.TryGetValue(key, out var pool))
+            if (!_poolDictionary.TryGetValue(key, out var pool)) return null;
+
+            // 🚀 ระบบหยวน 10%: คำนวณขีดจำกัดสูงสุดจริงๆ (Max + 10%)
+            int softLimit = pool.MaxSize + Mathf.CeilToInt(pool.MaxSize * 0.1f);
+
+            // เช็คว่าปัจจุบันมีของในระบบ (Active + Inactive) เกิน Soft Limit หรือยัง
+            // (หมายเหตุ: ในที่นี้เราเช็คว่าถ้า Queue ว่าง และเรากำลังจะงอกใหม่)
+            if (pool.InactiveCount == 0)
             {
-                Debug.LogError($"<b><color=#FF5252>[Pool Get Fail]</color></b> Key: <b>{key}</b> not found! Check PoolTableData.");
-                return null;
+                // ถ้าพี่อยากคุมเข้มไม่ให้งอกเกิน 10% จริงๆ ต้องเก็บนับ TotalInstance ไว้ด้วย 
+                // แต่เบื้องต้นผมจะให้มันงอกได้ แล้วไป "เตะออก" ตอน Release แทนครับ
             }
 
             Transform item = pool.Get();
             item.SetPositionAndRotation(position, rotation);
+            item.gameObject.SetActive(true);
+
             return item.GetComponent<T>();
         }
 
@@ -34,19 +43,20 @@ namespace Genoverrei.DesignPattern
 
             if (_poolDictionary.TryGetValue(key, out var pool))
             {
-                // 🚀 สั่งปิดการใช้งานก่อนส่งคืน
                 item.gameObject.SetActive(false);
-                pool.Return(item.transform);
-                Debug.Log($"<b><color=#69F0AE>[Pool Success]</color></b> {item.name} returned to Key: <b>{key}</b>");
-            }
-            else
-            {
-                // 🚀 จุดชี้เป็นชี้ตาย: ถ้าหา Key ไม่เจอ เราจะไม่ Destroy ทิ้ง แต่จะฟ้องพี่แทน!
-                Debug.LogError($"<b><color=#FF1744>[Pool Release ERROR]</color></b> Key: <b>{key}</b> NOT FOUND for {item.name}! " +
-                               "Check if Key matches Prefab Name in PoolTable.");
 
-                // ค้าง Object ไว้ในฉากเพื่อให้พี่คลิกดูชื่อมันได้
-                // item.gameObject.SetActive(false); 
+                // 🚀 ระบบคุมกำเนิด: ถ้าของที่ส่งคืนมา ทำให้ของในคลัง (Inactive) เกิน MaxSize
+                // ให้ทำลายทิ้งทันที เพื่อรักษาจำนวนให้คงที่ตามที่ตั้งค่าไว้
+                if (pool.InactiveCount >= pool.MaxSize)
+                {
+                    Debug.Log($"<b><color=#F06292>[Pool Capacity Control]</color></b> 🔥 <b>{key}</b> เกินค่า Max ({pool.MaxSize}) ทำลายทิ้งเพื่อลดภาระเครื่อง");
+                    pool.DestroyItem(item.transform);
+                }
+                else
+                {
+                    pool.Return(item.transform);
+                    Debug.Log($"<b><color=#69F0AE>[Pool Success]</color></b> ✅ {item.name} กลับเข้าคลัง (ในคลังมี: {pool.InactiveCount}/{pool.MaxSize})");
+                }
             }
         }
 
@@ -67,17 +77,19 @@ namespace Genoverrei.DesignPattern
         }
 
         private void ExecuteCreatePool(PoolTableData.PoolEntry entry, string key)
-        {
+        { 
             GameObject containerObj = new GameObject($"Pool_{key}");
             containerObj.transform.SetParent(transform);
             var pool = new ObjectPool<Transform>(entry.Prefab.transform, entry.MaxSize, containerObj.transform);
             _poolDictionary.Add(key, pool);
 
-            // Pre-warm
             int countToPreWarm = Mathf.Min(entry.InitialSize, entry.MaxSize);
             List<Transform> tempStack = new();
-            for (int i = 0; i < countToPreWarm; i++) tempStack.Add(pool.Get());
+            int i = 0;
+            for (i = 0; i < countToPreWarm; i++) tempStack.Add(pool.Get());
             foreach (var item in tempStack) pool.Return(item);
+
+            Debug.Log($"<b><color=#4FC3F7>[Pool Warm-up]</color></b> ❄️ Created <b>{countToPreWarm}</b> instances for Key: <b>{key} {i}items.</b>");
         }
     }
 }

@@ -220,11 +220,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!1 &273544011 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2052626612772056343, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-  m_PrefabInstance: {fileID: 1088900297805850411}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &311444820
 GameObject:
   m_ObjectHideFlags: 0
@@ -2355,38 +2350,12 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6685162782967845714, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
   m_PrefabInstance: {fileID: 1088900297805850411}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 273544011}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f080827f620cb1c4fb6160bb10b86559, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatsController
---- !u!114 &1579916631 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 589271425328983292, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-  m_PrefabInstance: {fileID: 1088900297805850411}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 273544011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ecf0ebe5ff8186544977a8ad1a7731cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MoveController
---- !u!114 &1579916632
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 273544011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba2c33b214d87f8408791c3dd432f3bf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterActionListener
-  _myCharacterId: 1
-  _moveController: {fileID: 1579916631}
-  _bombSpawnChannel: {fileID: 0}
 --- !u!1 &1647331267
 GameObject:
   m_ObjectHideFlags: 0
@@ -2653,7 +2622,7 @@ MonoBehaviour:
   - {fileID: 5445845719167433291}
   _destructibleTilemaps:
   - {fileID: 5364185884543106481}
-  _dropChance: 25
+  _dropChance: 100
   _itemPrefabs:
   - {fileID: 2564380002654690261, guid: 6e7d92c604bca2c4aaa413a9d579652e, type: 3}
   - {fileID: 2564380002654690261, guid: c1f0a088d60d07f4cab08a76946d75a0, type: 3}
@@ -5973,18 +5942,6 @@ PrefabInstance:
       propertyPath: _mapChannel
       value: 
       objectReference: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
-    - target: {fileID: 589271425328983292, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: _collisionCheckSize.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 589271425328983292, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: _collisionCheckSize.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 589271425328983292, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: _collisionLayer.m_Bits
-      value: 3072
-      objectReference: {fileID: 0}
     - target: {fileID: 624994779398715672, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -6029,29 +5986,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: In Game Object
       objectReference: {fileID: 0}
-    - target: {fileID: 2675913174237845293, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: '_solidTilemaps.Array.data[0]'
-      value: 
-      objectReference: {fileID: 6421736624179222574}
-    - target: {fileID: 2675913174237845293, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: '_solidTilemaps.Array.data[1]'
-      value: 
-      objectReference: {fileID: 5445845719167433291}
-    - target: {fileID: 2675913174237845293, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: '_destructibleTilemaps.Array.data[0]'
-      value: 
-      objectReference: {fileID: 5364185884543106481}
-    - target: {fileID: 6685162782967845714, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      propertyPath: _hitEffectPrefab
-      value: 
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2052626612772056343, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1579916632}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ef0e615b8942b1443a7b243da200e582, type: 3}
 --- !u!19719996 &1831923526546547282
 TilemapCollider2D:
