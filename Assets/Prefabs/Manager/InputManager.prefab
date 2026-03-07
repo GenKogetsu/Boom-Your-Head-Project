@@ -62,7 +62,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 5153982295660239679}
         m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: OnFirstPlayerMove
+        m_MethodName: OnMove
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -78,7 +78,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 5153982295660239679}
         m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: OnFirstPlayerBomb
+        m_MethodName: OnPlaceBomb
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -90,6 +90,10 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 5efb0f84-6275-46ff-a6ba-a627e125b0de
     m_ActionName: 'Player/PlaceBomb[/Keyboard/shift]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 68025328-9729-403e-aa40-d898f4f69c36
+    m_ActionName: 'Ui/PressAnyKey[/Keyboard/anyKey]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: Keyboard&Mouse
   m_DefaultActionMap: Player
@@ -107,3 +111,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c617902eb8c1f74da5c3c415c8518de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputManager
+  _botInputChannel: {fileID: 11400000, guid: b50f40cb9c912304784f062da5e390d1, type: 2}
+  _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}

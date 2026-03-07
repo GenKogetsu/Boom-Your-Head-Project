@@ -16,7 +16,7 @@ public class MainMenuController : MonoBehaviour
 
     }
 
-    public void OnPassAnyKey(InputAction.CallbackContext context)
+    public void OnPressAnyKey(InputAction.CallbackContext context)
     {
         if (!context.started) return;
 
