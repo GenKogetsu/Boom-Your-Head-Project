@@ -7,14 +7,18 @@ namespace BombGame.Manager
 {
     /// <summary>
     /// <para> (TH) : ศูนย์จัดการระบบระเบิด การงอกของไฟ และการแจ้งเตือนพื้นที่อันตรายผ่าน MapChannel </para>
+    /// <para> (EN) : Bomb system manager handling flame spread and danger zone alerts via MapChannel. </para>
     /// </summary>
     public sealed class BombManager : MonoBehaviour, ISignalListener
     {
         #region Variable
 
         [Header("Observer Channels")]
-        [SerializeField] private MapChannelSO _mapChannel;     // 🚀 ส่งข้อมูลอันตรายให้บอท
-        [SerializeField] private BombChannelSO _bombChannel;   // 🚀 รับสัญญาณจาก BombController และ Sensor
+        [SerializeField] private MapChannelSO _mapChannel;
+        [SerializeField] private BombChannelSO _bombChannel;
+
+        [Header("Data Registry")]
+        [SerializeField] private CharacterRegistrySO _characterRegistry; // 🚀 เพิ่มสมุดทะเบียน
 
         [Header("Pool Keys (Use Prefab Name)")]
         [SerializeField] private BombController _bombPrefab;
@@ -22,26 +26,17 @@ namespace BombGame.Manager
 
         [Header("Settings")]
         [SerializeField] private LayerMask _bombLayer;
-        [SerializeField] private Vector2 _collisionCheckSize = new(0.8f, 0.8f);
-
-        private Dictionary<Character, StatsController> _statsCache = new();
+        [SerializeField] private Vector2 _collisionCheckSize = new Vector2(0.8f, 0.8f);
 
         #endregion //Variable
 
         #region Unity Lifecycle
 
-        private void Start()
-        {
-            ExecuteInitializeCache();
-        }
-
         private void OnEnable()
         {
-            // 🚀 ฟังคำสั่งวางระเบิดจาก CharacterActionListener (Input/AI)
             if (EventBus.Instance != null)
                 EventBus.Instance.Subscribe<ISignal>(OnHandleSignal);
 
-            // 🚀 ฟังเหตุการณ์จากลูกระเบิดและเซนเซอร์ไฟ
             if (_bombChannel != null)
             {
                 _bombChannel.OnBombExploded += ExecuteHandleBombExploded;
@@ -67,10 +62,9 @@ namespace BombGame.Manager
 
         public void OnHandleSignal(ISignal signal)
         {
-            // รับสัญญาณวางระเบิด
             if (signal.Action == ActionType.PlaceBomb)
             {
-                TryPlaceBomb(signal.SignalTarget);
+                TryPlaceBomb(signal.SignalTarget); // SignalTarget คือ Enum Character
             }
         }
 
@@ -78,37 +72,25 @@ namespace BombGame.Manager
 
         #region Private Logic (Explosion Flow)
 
-        /// <summary>
-        /// (TH) : เมื่อระเบิดทำงาน ให้เริ่มกระบวนการงอกของไฟ
-        /// </summary>
         private void ExecuteHandleBombExploded(Vector2Int origin, int radius)
         {
-            // 1. สร้างจุดระเบิดกลาง
             SpawnExplosionEffect(origin, BombPart.Start, Vector2.zero);
-
-            // 2. งอกไฟออกไป 4 ทิศทาง
             ExecuteSpreadFlame(origin, Vector2Int.up, radius);
             ExecuteSpreadFlame(origin, Vector2Int.down, radius);
             ExecuteSpreadFlame(origin, Vector2Int.left, radius);
             ExecuteSpreadFlame(origin, Vector2Int.right, radius);
         }
 
-        /// <summary>
-        /// (TH) : คำนวณการงอกของไฟตามทิศทางและระยะ พร้อมแจ้งพื้นที่อันตรายให้ AI
-        /// </summary>
         private void ExecuteSpreadFlame(Vector2Int origin, Vector2Int direction, int radius)
         {
             for (int i = 1; i <= radius; i++)
             {
                 Vector2Int targetPos = origin + (direction * i);
 
-                // 🚀 เปลี่ยนจาก ?. มาใช้ if เช็คตรงๆ
                 if (_mapChannel != null)
                 {
                     _mapChannel.AddDangerZone(targetPos);
-
                     if (_mapChannel.IsSolid(targetPos)) break;
-
                     if (_mapChannel.IsDestructible(targetPos))
                     {
                         SpawnExplosionEffect(targetPos, BombPart.End, (Vector2)direction);
@@ -125,7 +107,6 @@ namespace BombGame.Manager
         {
             if (_explosionPrefab == null) return;
 
-            // ดึงจาก Pool โดยใช้ชื่อ Prefab เป็น Key
             var effect = ObjectPoolManager.Instance.Get<ExplosionAnimationController>(
                 _explosionPrefab.name,
                 (Vector3)(Vector2)pos,
@@ -138,12 +119,8 @@ namespace BombGame.Manager
             }
         }
 
-        /// <summary>
-        /// (TH) : เมื่อเซนเซอร์ไฟไปแตะโดนวัตถุ
-        /// </summary>
         private void ExecuteHandleFlameCollision(Vector3Int gridPos, Collider2D intruder)
         {
-            // 🚀 เปลี่ยนจาก ?. เป็น if
             if (_mapChannel != null)
             {
                 _mapChannel.RaiseDestruction(gridPos, intruder);
@@ -162,15 +139,16 @@ namespace BombGame.Manager
 
         #region Private Logic (Placement)
 
-        private void TryPlaceBomb(Character owner)
+        private void TryPlaceBomb(Character ownerType)
         {
-            if (!_statsCache.TryGetValue(owner, out var stats)) return;
+            // 🚀 ดึง StatsController จากสมุดทะเบียนโดยตรง! (ไม่ต้อง Cache เองแล้ว)
+            StatsController stats = _characterRegistry.GetCharacter(ownerType);
+
+            if (stats == null) return;
             if (stats.BombsRemaining <= 0) return;
 
-            // ปัดพิกัดตัวละครให้ลงล็อก Grid
-            Vector2 spawnPos = new(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
+            Vector2 spawnPos = new Vector2(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
 
-            // เช็คว่ามีระเบิดวางซ้อนกันไหม
             if (Physics2D.OverlapBox(spawnPos, _collisionCheckSize, 0f, _bombLayer)) return;
 
             if (_bombPrefab == null) return;
@@ -184,17 +162,7 @@ namespace BombGame.Manager
                     .Build(bomb, Vector2Int.RoundToInt(spawnPos), stats);
 
                 stats.BombsRemaining--;
-            }
-        }
-
-        private void ExecuteInitializeCache()
-        {
-            _statsCache.Clear();
-            var allStats = FindObjectsByType<StatsController>(FindObjectsSortMode.None);
-            foreach (var stats in allStats)
-            {
-                if (!_statsCache.ContainsKey(stats.LivingName))
-                    _statsCache.Add(stats.LivingName, stats);
+                Debug.Log($"<b><color=#FF8A65>[BombManager]</color></b> 💣 {ownerType} placed a bomb. ({stats.BombsRemaining} left)");
             }
         }
 

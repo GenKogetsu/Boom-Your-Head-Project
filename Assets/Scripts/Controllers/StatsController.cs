@@ -4,9 +4,8 @@ using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 
 /// <summary>
-/// <para> summary_StatsController </para>
-/// <para> (TH) : ตัวจัดการค่าสถานะของตัวละคร รวมถึงระบบพลังชีวิต การรับดาเมจ และสถานะอมตะชั่วคราว </para>
-/// <para> (EN) : Manager for character statistics including health, damage, and temporary invincibility. </para>
+/// <para> (TH) : ตัวจัดการค่าสถานะของตัวละคร รวมถึงระบบพลังชีวิต การรับดาเมจ สถานะอมตะชั่วคราว และการรีเซ็ตค่าสถานะ </para>
+/// <para> (EN) : Manager for character statistics including health, damage, temporary invincibility, and status resetting. </para>
 /// </summary>
 public sealed class StatsController : MonoBehaviour, ITakeDamageable
 {
@@ -16,49 +15,25 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
     [SerializeField] private LivingThingsScriptable _statsData;
 
     [Header("Auto Linked Components")]
-    [ReadOnly]
-    [SerializeField] private Character _livingName;
-
-    [ReadOnly]
-    [SerializeField] private Animator _characterAnimator;
-
-    [ReadOnly]
-    [SerializeField] private SpriteRenderer _characterSprite;
-
-    [ReadOnly]
-    [SerializeField] private Rigidbody2D _characterRigidbody;
-
-    [ReadOnly]
-    [SerializeField] private Collider2D _characterCollider;
+    [ReadOnly][SerializeField] private Character _livingName;
+    [ReadOnly][SerializeField] private Animator _characterAnimator;
+    [ReadOnly][SerializeField] private SpriteRenderer _characterSprite;
+    [ReadOnly][SerializeField] private Rigidbody2D _characterRigidbody;
+    [ReadOnly][SerializeField] private Collider2D _characterCollider;
 
     [Header("Damage Settings")]
     [SerializeField] private float _invincibilityTime = 1.2f;
-
     [SerializeField] private float _flashSpeed = 15f;
-
     [SerializeField] private GameObject _hitEffectPrefab;
 
     [Header("Runtime Stats")]
-    [ReadOnly]
-    [SerializeField] private bool _isInvincible;
-
-    [ReadOnly]
-    [SerializeField] private int _currentHp;
-
-    [ReadOnly]
-    [SerializeField] private int _currentAtk;
-
-    [ReadOnly]
-    [SerializeField] private float _currentSpeed;
-
-    [ReadOnly]
-    [SerializeField] private int _currentBombAmount;
-
-    [ReadOnly]
-    [SerializeField] private int _currentExplosionRange;
-
-    [ReadOnly]
-    [SerializeField] private int _bombsRemaining;
+    [ReadOnly][SerializeField] private bool _isInvincible;
+    [ReadOnly][SerializeField] private int _currentHp;
+    [ReadOnly][SerializeField] private int _currentAtk;
+    [ReadOnly][SerializeField] private float _currentSpeed;
+    [ReadOnly][SerializeField] private int _currentBombAmount;
+    [ReadOnly][SerializeField] private int _currentExplosionRange;
+    [ReadOnly][SerializeField] private int _bombsRemaining;
 
     #endregion //Variable
 
@@ -73,7 +48,6 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
     #region Explicit Interface Implementation
 
     void ITakeDamageable.TakeDamage(int amount) => ExecuteTakeDamage(amount);
-
     void ITakeDamageable.ApplyDamage(int amount) => ExecuteApplyDamage(amount);
 
     #endregion //Explicit Interface Implementation
@@ -120,6 +94,10 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
     #region Public Methods
 
+    /// <summary>
+    /// <para> (TH) : ดึงข้อมูลตั้งต้นจาก ScriptableObject กลับมาทับค่า Runtime ปัจจุบัน </para>
+    /// <para> (EN) : Syncs current runtime stats with initial values from the ScriptableObject. </para>
+    /// </summary>
     public void SyncData()
     {
         if (_statsData == null) return;
@@ -130,6 +108,44 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
         _currentBombAmount = _statsData.baseBombAmount;
         _currentExplosionRange = _statsData.baseExplosionRange;
         _bombsRemaining = _currentBombAmount;
+    }
+
+    /// <summary>
+    /// <para> (TH) : รีเซ็ตค่าสถานะและเปิดการทำงานของ Component กลับเป็นค่าเริ่มต้น (ใช้ตอน Spawn ใหม่) </para>
+    /// <para> (EN) : Resets stats and re-enables components to default state (Used on Respawn). </para>
+    /// </summary>
+    public void ResetStats()
+    {
+        SyncData();
+        IsInvincible = false;
+
+        // คืนค่าการแสดงผล
+        if (_characterSprite != null)
+        {
+            Color c = _characterSprite.color;
+            c.a = 1f;
+            _characterSprite.color = c;
+        }
+
+        // เปิด Physics
+        if (_characterRigidbody != null)
+        {
+            _characterRigidbody.simulated = true;
+            _characterRigidbody.bodyType = RigidbodyType2D.Dynamic;
+        }
+
+        if (_characterCollider != null) _characterCollider.enabled = true;
+
+        // เปิด Logic และ Animator
+        this.enabled = true;
+        if (_characterAnimator != null)
+        {
+            _characterAnimator.enabled = true;
+            _characterAnimator.SetInteger("Hp", _currentHp);
+            _characterAnimator.Play("Idle"); // กลับไปท่าเริ่มต้น
+        }
+
+        Debug.Log($"<b><color=#4FC3F7>[Stats Reset]</color></b> {name} has been restored to initial state.");
     }
 
     public void OnHitItem(string itemTag)
@@ -175,14 +191,22 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
     private void OnDeath()
     {
+        // ปิด Physics และการควบคุม แต่ไม่ Destroy เพื่อให้ Registry ยังอ้างอิงถึงได้
         if (_characterRigidbody != null)
         {
             _characterRigidbody.simulated = false;
             _characterRigidbody.bodyType = RigidbodyType2D.Static;
         }
+
         if (_characterCollider != null) _characterCollider.enabled = false;
 
+        // ส่ง Event แจ้งว่าตายแล้ว
         EventBus.Instance.Publish(new CharacterDeathEvent(this.gameObject, _statsData != null ? _statsData.livingType : Charactertype.Bot));
+
+        // ปิดสคริปต์ตัวเองเพื่อหยุด Logic การทำงาน
+        this.enabled = false;
+
+        Debug.Log($"<b><color=#FF5252>[Death]</color></b> {name} is dead. Logic disabled for pooling/registry.");
     }
 
     #endregion //Private Logic

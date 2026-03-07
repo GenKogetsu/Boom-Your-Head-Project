@@ -5,6 +5,5 @@ global using UnityEngine;
 global using BombGame.EnumSpace;
 global using BombGame.RecordEventSpace;
 global using BombGame.Ability;
-global using BombGame.Data;
 global using BombGame.StateSpace;
 global using BombGame.StrategySpace;

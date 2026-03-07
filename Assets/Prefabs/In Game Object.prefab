@@ -140,10 +140,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Ryuwen
       objectReference: {fileID: 0}
-    - target: {fileID: 2090009655494765197, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
-      propertyPath: _mapChannel
-      value: 
-      objectReference: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
     - target: {fileID: 3668039724578307482, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2

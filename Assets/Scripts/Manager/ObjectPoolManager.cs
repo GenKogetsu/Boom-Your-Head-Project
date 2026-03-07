@@ -3,11 +3,16 @@ using System.Collections.Generic;
 
 namespace Genoverrei.DesignPattern
 {
+    /// <summary>
+    /// <para> (TH) : ศูนย์กลางจัดการ Object Pool ทั้งหมดในเกม คอยเริ่มการทำงานและกระจายคำสั่ง Get/Release </para>
+    /// <para> (EN) : Central Object Pool manager handling initialization and Get/Release requests. </para>
+    /// </summary>
     public sealed class ObjectPoolManager : Singleton<ObjectPoolManager>
     {
         [Header("Pool Data Configuration")]
-        [SerializeField] private List<PoolTableData> _poolTables = new();
-        private Dictionary<string, ObjectPool<Transform>> _poolDictionary = new();
+        [SerializeField] private List<PoolTableData> _poolTables = new List<PoolTableData>();
+
+        private Dictionary<string, ObjectPool<Transform>> _poolDictionary = new Dictionary<string, ObjectPool<Transform>>();
 
         protected override void Awake()
         {
@@ -15,28 +20,28 @@ namespace Genoverrei.DesignPattern
             ExecuteInitialize();
         }
 
+        /// <summary>
+        /// (TH) : ดึง Object จาก Pool ออกมาใช้งานตามชื่อ Key (ชื่อ Prefab)
+        /// </summary>
         public T Get<T>(string key, Vector3 position, Quaternion rotation) where T : Component
         {
-            if (!_poolDictionary.TryGetValue(key, out var pool)) return null;
-
-            // 🚀 ระบบหยวน 10%: คำนวณขีดจำกัดสูงสุดจริงๆ (Max + 10%)
-            int softLimit = pool.MaxSize + Mathf.CeilToInt(pool.MaxSize * 0.1f);
-
-            // เช็คว่าปัจจุบันมีของในระบบ (Active + Inactive) เกิน Soft Limit หรือยัง
-            // (หมายเหตุ: ในที่นี้เราเช็คว่าถ้า Queue ว่าง และเรากำลังจะงอกใหม่)
-            if (pool.InactiveCount == 0)
+            if (!_poolDictionary.TryGetValue(key, out var pool))
             {
-                // ถ้าพี่อยากคุมเข้มไม่ให้งอกเกิน 10% จริงๆ ต้องเก็บนับ TotalInstance ไว้ด้วย 
-                // แต่เบื้องต้นผมจะให้มันงอกได้ แล้วไป "เตะออก" ตอน Release แทนครับ
+                Debug.LogError($"<b><color=#FF5252>[Pool Get Fail]</color></b> Key: <b>{key}</b> not found!");
+                return null;
             }
 
             Transform item = pool.Get();
+            if (item == null) return null;
+
             item.SetPositionAndRotation(position, rotation);
             item.gameObject.SetActive(true);
-
             return item.GetComponent<T>();
         }
 
+        /// <summary>
+        /// (TH) : ส่งคืน Object กลับเข้า Pool เมื่อเลิกใช้งาน
+        /// </summary>
         public void Release(string key, Component item)
         {
             if (item == null) return;
@@ -45,19 +50,35 @@ namespace Genoverrei.DesignPattern
             {
                 item.gameObject.SetActive(false);
 
-                // 🚀 ระบบคุมกำเนิด: ถ้าของที่ส่งคืนมา ทำให้ของในคลัง (Inactive) เกิน MaxSize
-                // ให้ทำลายทิ้งทันที เพื่อรักษาจำนวนให้คงที่ตามที่ตั้งค่าไว้
+                // ถ้าในคิวเต็มเกิน MaxSize แล้ว ให้ทำลายทิ้งเพื่อไม่ให้ Memory บวม
                 if (pool.InactiveCount >= pool.MaxSize)
                 {
-                    Debug.Log($"<b><color=#F06292>[Pool Capacity Control]</color></b> 🔥 <b>{key}</b> เกินค่า Max ({pool.MaxSize}) ทำลายทิ้งเพื่อลดภาระเครื่อง");
+                    Debug.Log($"<b><color=#F06292>[Pool Capacity Control]</color></b> 🔥 <b>{key}</b> เกินค่า Max ({pool.MaxSize}) ทำลายทิ้งทันที");
                     pool.DestroyItem(item.transform);
                 }
                 else
                 {
                     pool.Return(item.transform);
-                    Debug.Log($"<b><color=#69F0AE>[Pool Success]</color></b> ✅ {item.name} กลับเข้าคลัง (ในคลังมี: {pool.InactiveCount}/{pool.MaxSize})");
+                    Debug.Log($"<b><color=#69F0AE>[Pool Return]</color></b> ✅ <b>{key}</b> returned to pool.");
                 }
             }
+            else
+            {
+                Debug.LogWarning($"<b><color=#FF1744>[Pool Error]</color></b> Key <b>{key}</b> not found during release! Destroying object.");
+                Destroy(item.gameObject);
+            }
+        }
+
+        /// <summary>
+        /// (TH) : เรียกใช้เพื่อเคลียร์ Object ทั้งหมดในฉากกลับเข้า Pool (แนะนำให้เรียกก่อนโหลด Scene ใหม่)
+        /// </summary>
+        public void ReleaseAllPools()
+        {
+            foreach (var kvp in _poolDictionary)
+            {
+                kvp.Value.ReturnAllActive();
+            }
+            Debug.Log("<b><color=#FFEB3B>[PoolManager]</color></b> 🧹 ดูดทุก Object กลับเข้า Pool เรียบร้อย!");
         }
 
         private void ExecuteInitialize()
@@ -68,28 +89,33 @@ namespace Genoverrei.DesignPattern
                 foreach (var entry in table.Entries)
                 {
                     if (entry.Prefab == null) continue;
+
                     string key = entry.Prefab.name;
                     if (_poolDictionary.ContainsKey(key)) continue;
 
-                    ExecuteCreatePool(entry, key);
+                    // สร้าง Container เพื่อความเป็นระเบียบใน Hierarchy
+                    GameObject containerObj = new GameObject($"Pool_{key}");
+                    containerObj.transform.SetParent(transform);
+
+                    // สร้าง Pool ใหม่พร้อมส่งค่า LimitOverPercent ไปคำนวณ
+                    var pool = new ObjectPool<Transform>(
+                        entry.Prefab.transform,
+                        entry.MaxSize,
+                        entry.LimitOverPercent,
+                        containerObj.transform
+                    );
+
+                    _poolDictionary.Add(key, pool);
+
+                    // สร้าง Object รอไว้ตาม InitialSize
+                    int countToPreWarm = Mathf.Min(entry.InitialSize, entry.MaxSize);
+                    List<Transform> tempStack = new List<Transform>();
+                    for (int i = 0; i < countToPreWarm; i++) tempStack.Add(pool.Get());
+                    foreach (var item in tempStack) pool.Return(item);
+
+                    Debug.Log($"<b><color=#4FC3F7>[Pool Initialized]</color></b> 🚀 <b>{key}</b> (Init: {countToPreWarm} | Max: {entry.MaxSize} | Over: {entry.LimitOverPercent}%)");
                 }
             }
-        }
-
-        private void ExecuteCreatePool(PoolTableData.PoolEntry entry, string key)
-        { 
-            GameObject containerObj = new GameObject($"Pool_{key}");
-            containerObj.transform.SetParent(transform);
-            var pool = new ObjectPool<Transform>(entry.Prefab.transform, entry.MaxSize, containerObj.transform);
-            _poolDictionary.Add(key, pool);
-
-            int countToPreWarm = Mathf.Min(entry.InitialSize, entry.MaxSize);
-            List<Transform> tempStack = new();
-            int i = 0;
-            for (i = 0; i < countToPreWarm; i++) tempStack.Add(pool.Get());
-            foreach (var item in tempStack) pool.Return(item);
-
-            Debug.Log($"<b><color=#4FC3F7>[Pool Warm-up]</color></b> ❄️ Created <b>{countToPreWarm}</b> instances for Key: <b>{key} {i}items.</b>");
         }
     }
 }

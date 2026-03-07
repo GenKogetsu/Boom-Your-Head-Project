@@ -16,12 +16,16 @@ MonoBehaviour:
   - Prefab: {fileID: 2564380002654690261, guid: 6e7d92c604bca2c4aaa413a9d579652e, type: 3}
     InitialSize: 16
     MaxSize: 256
+    LimitOverPercent: 10
   - Prefab: {fileID: 2564380002654690261, guid: c1f0a088d60d07f4cab08a76946d75a0, type: 3}
     InitialSize: 16
     MaxSize: 256
+    LimitOverPercent: 10
   - Prefab: {fileID: 2564380002654690261, guid: e5c30de0d75c2fb4e90cc9097f804492, type: 3}
     InitialSize: 16
     MaxSize: 256
+    LimitOverPercent: 10
   - Prefab: {fileID: 2564380002654690261, guid: 89b4d76e5128be547946fd99bcdab913, type: 3}
     InitialSize: 16
     MaxSize: 256
+    LimitOverPercent: 10
