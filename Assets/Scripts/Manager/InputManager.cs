@@ -24,7 +24,7 @@ public sealed class InputManager : MonoBehaviour
 
     private void OnEnable()
     {
-        // 🤖 ดักฟังคำสั่งจากฝั่งบอท
+        // 🤖 ดักฟังคำสั่งจากฝั่งบอท (สำหรับโหมดเล่นกับ AI)
         if (_botInputChannel != null)
         {
             _botInputChannel.OnBotActionTriggered += ExecuteHandleBotInput;
@@ -43,8 +43,10 @@ public sealed class InputManager : MonoBehaviour
 
     #region Public Methods (For Player Input System)
 
+    // ------------------ PLAYER 1 ------------------
+
     /// <summary>
-    /// <para> (TH) : รับ Input การเคลื่อนที่จาก Player 1 </para>
+    /// <para> (TH) : รับ Input การเคลื่อนที่จาก Player 1 (Index 0) </para>
     /// </summary>
     public void OnMoveP1(InputAction.CallbackContext context)
     {
@@ -53,7 +55,7 @@ public sealed class InputManager : MonoBehaviour
     }
 
     /// <summary>
-    /// <para> (TH) : รับ Input การวางระเบิดจาก Player 1 </para>
+    /// <para> (TH) : รับ Input การวางระเบิดจาก Player 1 (Index 0) </para>
     /// </summary>
     public void OnPlaceBombP1(InputAction.CallbackContext context)
     {
@@ -63,13 +65,26 @@ public sealed class InputManager : MonoBehaviour
         }
     }
 
+    // ------------------ PLAYER 2 ------------------
+
     /// <summary>
-    /// <para> (TH) : รับ Input การเคลื่อนที่จาก Player 2 (ถ้ามี) </para>
+    /// <para> (TH) : รับ Input การเคลื่อนที่จาก Player 2 (Index 1) </para>
     /// </summary>
     public void OnMoveP2(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
         BroadcastAction(GetCharacterFromSession(1), ActionType.Move, new MoveInputEvent(input));
+    }
+
+    /// <summary>
+    /// <para> (TH) : รับ Input การวางระเบิดจาก Player 2 (Index 1) </para>
+    /// </summary>
+    public void OnPlaceBombP2(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            BroadcastAction(GetCharacterFromSession(1), ActionType.PlaceBomb, null);
+        }
     }
 
     #endregion // Public Methods
@@ -81,8 +96,10 @@ public sealed class InputManager : MonoBehaviour
     /// </summary>
     private Character GetCharacterFromSession(int index)
     {
-        if (_sessionData == null || _sessionData.SelectedCharacters.Count <= index)
-            return Character.None; // หรือ Default ที่พี่ตั้งไว้
+        if (_sessionData == null || _sessionData.SelectedCharacters == null) return Character.None;
+
+        // เช็คว่ามีตัวละครในลำดับที่ต้องการไหม (เช่น ถ้าเล่นคนเดียว Index 1 จะไม่มี)
+        if (index >= _sessionData.SelectedCharacters.Count) return Character.None;
 
         return _sessionData.SelectedCharacters[index];
     }
@@ -100,12 +117,13 @@ public sealed class InputManager : MonoBehaviour
     /// </summary>
     private void BroadcastAction(Character target, ActionType actionType, IEvent subEvent)
     {
+        // ถ้าไม่ระบุตัวเป้าหมาย (None) ให้ข้ามการส่งสัญญาณ
         if (target == Character.None) return;
 
         // สร้างข้อมูล action (Signal)
         var signal = new CharacterAction(target, actionType, subEvent);
 
-        // 🚀 ส่งสัญญาณผ่าน EventBus โดยใช้ Interface ISignal เพื่อให้คลาสอื่นๆ (เช่น StatsController/BombManager) รอรับได้
+        // 🚀 ส่งสัญญาณผ่าน EventBus โดยใช้ Interface ISignal
         if (EventBus.Instance != null)
         {
             EventBus.Instance.Publish<ISignal>(signal);

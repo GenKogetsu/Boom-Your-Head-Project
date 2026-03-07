@@ -12,7 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed31eb22db1281647b6f4952eff0958e, type: 3}
   m_Name: GamaData
   m_EditorClassIdentifier: Assembly-CSharp::GameSessionData
-  _playerCount: 4
-  _firstPlayerCharacter: 1
-  _secondPlayerCharacter: 2
-  _currentStageIndex: 4
+  _characterLibrary:
+  - CharacterType: 2
+    Prefab: {fileID: 5221531466979227231, guid: 2af28524940d0e141858e7a0322c767b, type: 3}
+  - CharacterType: 3
+    Prefab: {fileID: 5223673738035743935, guid: b4dd778b381749d489532d9ca539244b, type: 3}
+  - CharacterType: 2
+    Prefab: {fileID: 671267856186993510, guid: 2ad0f030f81433c4ab07d8b1356d1720, type: 3}
+  - CharacterType: 4
+    Prefab: {fileID: 2111925533556937854, guid: 297363e95a3520e45b9f04bcb32cd4e8, type: 3}
+  PlayerCount: 2
+  SelectedCharacters: 0100000003000000
+  CurrentStageIndex: 0
