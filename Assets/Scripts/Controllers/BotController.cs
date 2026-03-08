@@ -19,23 +19,20 @@ public sealed class BotController : MonoBehaviour, IPathfindable
     [Range(0.1f, 1f)]
     [SerializeField] private float _aggressiveness = 0.8f;
 
-    [Header("Radar Layers (ตั้งค่าให้ตรงกับเกม)")]
+    [Header("Radar Layers")]
     [SerializeField] private int _itemSearchRadius = 8;
+    [SerializeField] private int _entitySearchRadius = 4; // 🚀 [NEW] แยกระยะตรวจจับรถให้เหลือ 4
     [SerializeField] private LayerMask _itemLayer;
     [SerializeField] private LayerMask _bombLayer;
+    [SerializeField] private LayerMask _entityLayer;
 
     [Header("Combat Readiness Thresholds (Offsets)")]
-    [Tooltip("ถ้าเลือดถึงค่านี้ จะเริ่มบวก")]
     [SerializeField] private int _readyHp = 3;
-    [Tooltip("ถ้าระยะระเบิดถึงค่านี้ จะเริ่มบวก")]
     [SerializeField] private int _readyRange = 3;
-    [Tooltip("ถ้าความเร็วถึงค่านี้ จะเริ่มบวก")]
     [SerializeField] private float _readySpeed = 5f;
-    [Tooltip("ถ้าจำนวนระเบิดถึงค่านี้ จะเริ่มบวก")]
     [SerializeField] private int _readyBombCount = 3;
 
     [Header("Panic Settings")]
-    [Tooltip("ถ้าเลือดต่ำกว่าค่านี้ จะเลิกสู้แล้วหนีไปฟาร์มจนกว่าเลือดจะเด้ง")]
     [SerializeField] private int _panicHpThreshold = 2;
 
     [Header("Identity (Multi-Drive)")]
@@ -146,107 +143,81 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             if (isCurrentlyThreatened)
             {
                 brain.Behavior = BotFullStateMachine.Fleeing;
-                bool needNewSafeSpot = brain.SafeTarget.x == -9999 ||
-                                       _mapChannel.IsDangerous(brain.SafeTarget) ||
-                                       IsThreatenedByBomb(brain.SafeTarget, safeRadius) ||
-                                       myGridPos == brain.SafeTarget;
-
-                if (needNewSafeSpot)
-                {
-                    brain.SafeTarget = ExecuteGetSafeSpot(myGridPos, safeRadius);
-                }
+                bool needNewSafeSpot = brain.SafeTarget.x == -9999 || _mapChannel.IsDangerous(brain.SafeTarget) || IsThreatenedByBomb(brain.SafeTarget, safeRadius) || myGridPos == brain.SafeTarget;
+                if (needNewSafeSpot) brain.SafeTarget = ExecuteGetSafeSpot(myGridPos, safeRadius);
 
                 if (brain.SafeTarget.x != -9999)
                 {
                     brain.CurrentFullPath = GetEscapePath(myGridPos, brain.SafeTarget);
-                    if (brain.CurrentFullPath.Count > 0)
-                    {
-                        ExecuteRequestMove(botId, stats, brain.CurrentFullPath[0]);
-                    }
-                    else
-                    {
-                        ExecuteRequestMove(botId, stats, myGridPos);
-                    }
-                }
-                else
-                {
-                    ExecuteRequestMove(botId, stats, myGridPos);
+                    ExecuteRequestMove(botId, stats, brain.CurrentFullPath.Count > 0 ? brain.CurrentFullPath[0] : myGridPos);
                 }
                 continue;
-            }
-            else
-            {
-                brain.SafeTarget = new Vector2Int(-9999, -9999);
             }
 
             // 🎯 PRIORITY 2: ITEM HUNTING
             bool needNewItem = brain.TargetItemPos.x == -9999 || !CheckHasItemAt(brain.TargetItemPos);
-            if (needNewItem)
-            {
-                brain.TargetItemPos = ExecuteFindNearestItem(myGridPos);
-            }
+            // 🚀 [FIX] ส่ง _itemSearchRadius เข้าไปแสกนหาไอเทม
+            if (needNewItem) brain.TargetItemPos = ExecuteFindNearestObject(myGridPos, _itemLayer, _itemSearchRadius);
 
             if (brain.TargetItemPos.x != -9999)
             {
                 brain.Behavior = BotFullStateMachine.Patrolling;
                 brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetItemPos, false, safeRadius);
-
-                if (brain.CurrentFullPath.Count > 0)
-                {
-                    ExecuteRequestMove(botId, stats, brain.CurrentFullPath[0]);
-                }
-                else
-                {
-                    ExecuteRequestMove(botId, stats, myGridPos);
-                    if (myGridPos != brain.TargetItemPos)
-                    {
-                        brain.TargetItemPos = new Vector2Int(-9999, -9999);
-                    }
-                }
+                if (brain.CurrentFullPath.Count > 0) ExecuteRequestMove(botId, stats, brain.CurrentFullPath[0]);
                 continue;
             }
 
-            // --- วิเคราะห์สถานะ (Combat Readiness) ---
+            // --- วิเคราะห์ความพร้อมก่อนบวก ---
             bool isPanic = stats.CurrentHp < _panicHpThreshold;
+            bool isReadyToFight = (stats.CurrentHp >= _readyHp) || (stats.CurrentExplosionRange >= _readyRange) || (stats.CurrentSpeed >= _readySpeed) || (stats.CurrentBombAmount >= _readyBombCount);
 
-            bool isReadyToFight = (stats.CurrentHp >= _readyHp) ||
-                                  (stats.CurrentExplosionRange >= _readyRange) ||
-                                  (stats.CurrentSpeed >= _readySpeed) ||
-                                  (stats.CurrentBombAmount >= _readyBombCount);
+            // 🎯 PRIORITY 2.5: ENTITY HUNTING
+            if (isReadyToFight && !isPanic)
+            {
+                // 🚀 [FIX] ส่ง _entitySearchRadius เข้าไปแสกนหารถแทน! ระยะจะสั้นลงตามที่ตั้งค่า
+                Vector2Int nearestEntity = ExecuteFindNearestObject(myGridPos, _entityLayer, _entitySearchRadius);
+                if (nearestEntity.x != -9999)
+                {
+                    brain.Behavior = BotFullStateMachine.Chasing;
+                    brain.CurrentFullPath = GetFullPath(myGridPos, nearestEntity, true, safeRadius);
+                    if (brain.CurrentFullPath.Count > 0)
+                    {
+                        Vector2Int nextStep = brain.CurrentFullPath[0];
+                        if (!_mapChannel.IsWalkable(nextStep))
+                        {
+                            if (Vector2Int.Distance(myGridPos, nextStep) <= 1.1f) ExecuteRequestBomb(botId, stats);
+                            ExecuteRequestMove(botId, stats, myGridPos);
+                        }
+                        else { ExecuteRequestMove(botId, stats, nextStep); }
+                        continue;
+                    }
+                }
+            }
 
+            // 🎯 PRIORITY 3: PLAYER HUNTING / FARMING
             Vector2Int nearestBox = ExecuteFindNearestBox(myGridPos, 30);
             bool noBoxesLeft = (nearestBox.x == -9999);
-
-            if (noBoxesLeft) isReadyToFight = true;
-            else if (isPanic) isReadyToFight = false;
+            if (noBoxesLeft) isReadyToFight = true; else if (isPanic) isReadyToFight = false;
 
             if (activePlayers.Count > 0)
             {
                 brain.TargetPlayer = activePlayers[_targetsToDrive.IndexOf(botId) % activePlayers.Count];
                 brain.TargetGridPos = WorldToGrid(_characterRegistry.GetStats(brain.TargetPlayer).transform.position);
             }
-            else { brain.TargetPlayer = Character.None; }
 
-            // 🎯 PRIORITY 3: ACTION DECISION
             if (!isReadyToFight && !noBoxesLeft)
             {
                 // 🚜 Farming Mode
-                brain.Behavior = BotFullStateMachine.Patrolling;
                 brain.CurrentFullPath = GetFullPath(myGridPos, nearestBox, true, safeRadius);
-
                 if (brain.CurrentFullPath.Count > 0)
                 {
                     Vector2Int nextStep = brain.CurrentFullPath[0];
                     if (!_mapChannel.IsWalkable(nextStep))
                     {
-                        brain.TargetBombTile = myGridPos;
                         if (Vector2Int.Distance(myGridPos, nextStep) <= 1.1f) ExecuteRequestBomb(botId, stats);
                         ExecuteRequestMove(botId, stats, myGridPos);
                     }
-                    else
-                    {
-                        ExecuteRequestMove(botId, stats, nextStep);
-                    }
+                    else { ExecuteRequestMove(botId, stats, nextStep); }
                 }
             }
             else if (brain.TargetPlayer != Character.None)
@@ -254,180 +225,52 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 // ⚔️ Combat Mode
                 brain.Behavior = BotFullStateMachine.Chasing;
                 float distToTarget = Vector2Int.Distance(myGridPos, brain.TargetGridPos);
+                if (distToTarget <= 1.2f) { ExecuteRequestMove(botId, stats, myGridPos); ExecuteRequestBomb(botId, stats); continue; }
 
-                if (distToTarget <= 1.2f)
-                {
-                    brain.TargetBombTile = myGridPos;
-                    ExecuteRequestMove(botId, stats, myGridPos);
-                    ExecuteRequestBomb(botId, stats);
-                    continue;
-                }
-
-                if (ExecuteTryKickBomb(botId, stats, brain)) continue;
-
-                // วิ่งไล่ล่า
                 brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetGridPos, true, safeRadius);
                 if (brain.CurrentFullPath.Count > 0)
                 {
                     Vector2Int nextStep = brain.CurrentFullPath[0];
                     if (!_mapChannel.IsWalkable(nextStep))
                     {
-                        brain.TargetBombTile = myGridPos;
                         if (Vector2Int.Distance(myGridPos, nextStep) <= 1.1f) ExecuteRequestBomb(botId, stats);
                         ExecuteRequestMove(botId, stats, myGridPos);
                     }
-                    else
-                    {
-                        ExecuteRequestMove(botId, stats, nextStep);
-
-                        if (distToTarget <= 3f && Random.value < _aggressiveness * 0.4f)
-                        {
-                            brain.TargetBombTile = myGridPos;
-                            ExecuteRequestBomb(botId, stats);
-                        }
-                    }
+                    else { ExecuteRequestMove(botId, stats, nextStep); }
                 }
             }
         }
     }
 
-    #region Radar & Safety Logic
+    #region Radar Helpers
 
-    private bool CheckHasBombAt(Vector2Int pos)
+    // 🚀 [FIX] รับค่า radius เข้ามาเป็นพารามิเตอร์ เพื่อให้ยืดหยุ่นแยกระหว่างไอเทมกับรถได้
+    private Vector2Int ExecuteFindNearestObject(Vector2Int start, LayerMask layer, float radius)
     {
-        Collider2D hit = Physics2D.OverlapCircle((Vector2)pos, 0.3f, _bombLayer);
-        return hit != null;
-    }
-
-    private bool CheckHasItemAt(Vector2Int pos)
-    {
-        Collider2D hit = Physics2D.OverlapCircle((Vector2)pos, 0.3f, _itemLayer);
-        return hit != null;
-    }
-
-    private bool IsThreatenedByBomb(Vector2Int pos, int dangerRadius)
-    {
-        if (CheckHasBombAt(pos)) return true;
-
-        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-        foreach (var d in dirs)
-        {
-            for (int i = 1; i <= dangerRadius; i++)
-            {
-                Vector2Int checkPos = pos + d * i;
-                if (_mapChannel.IsSolid(checkPos) || _mapChannel.IsDestructible(checkPos))
-                {
-                    if (CheckHasBombAt(checkPos)) return true;
-                    break;
-                }
-                if (CheckHasBombAt(checkPos)) return true;
-            }
-        }
-
-        for (int x = -1; x <= 1; x++)
-        {
-            for (int y = -1; y <= 1; y++)
-            {
-                if (CheckHasBombAt(pos + new Vector2Int(x, y))) return true;
-            }
-        }
-        return false;
-    }
-
-    private void ExecuteRequestBomb(Character botId, StatsController stats)
-    {
-        if (stats.BombsRemaining <= 0) return;
-
-        var brain = _botBrains[botId];
-        if (Time.time - brain.LastBombTime < 0.4f) return;
-
-        Vector2Int gridPos = WorldToGrid(stats.transform.position);
-        stats.transform.position = (Vector2)gridPos;
-
-        _botInputChannel.RaiseEvent(botId, ActionType.PlaceBomb, null);
-        brain.LastBombTime = Time.time;
-    }
-
-    private Vector2Int ExecuteFindNearestBox(Vector2Int start, int maxRadius)
-    {
-        for (int r = 1; r <= maxRadius; r++)
-        {
-            for (int x = -r; x <= r; x++)
-            {
-                for (int y = -r; y <= r; y++)
-                {
-                    if (Mathf.Abs(x) != r && Mathf.Abs(y) != r) continue;
-                    Vector2Int pos = start + new Vector2Int(x, y);
-                    if (_mapChannel.IsDestructible(pos)) return pos;
-                }
-            }
-        }
-        return new Vector2Int(-9999, -9999);
-    }
-
-    private Vector2Int ExecuteFindNearestItem(Vector2Int start)
-    {
-        Collider2D[] items = Physics2D.OverlapCircleAll((Vector2)start, _itemSearchRadius, _itemLayer);
+        Collider2D[] objects = Physics2D.OverlapCircleAll((Vector2)start, radius, layer);
         Vector2Int bestPos = new Vector2Int(-9999, -9999);
         float minDist = float.MaxValue;
 
-        foreach (var item in items)
+        foreach (var obj in objects)
         {
-            Vector2Int itemGrid = WorldToGrid(item.transform.position);
-            if (_mapChannel.IsWalkable(itemGrid))
+            if (obj.gameObject == this.gameObject) continue;
+
+            Vector2Int gridPos = WorldToGrid(obj.transform.position);
+            if (_mapChannel.IsWalkable(gridPos) || layer == _entityLayer)
             {
-                float dist = Vector2Int.Distance(start, itemGrid);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    bestPos = itemGrid;
-                }
+                float dist = Vector2Int.Distance(start, gridPos);
+                if (dist < minDist) { minDist = dist; bestPos = gridPos; }
             }
         }
         return bestPos;
     }
 
-    private bool ExecuteTryKickBomb(Character botId, StatsController stats, BotBrainState brain)
-    {
-        Vector2Int myPos = WorldToGrid(stats.transform.position);
-        foreach (var dir in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
-        {
-            Vector2Int bombPos = myPos + dir;
-            if (CheckHasBombAt(bombPos))
-            {
-                if (IsTargetInLine(bombPos, dir, brain.TargetGridPos) && CanBombSlide(bombPos, dir, brain.TargetGridPos))
-                {
-                    ExecuteRequestMove(botId, stats, bombPos);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private bool IsTargetInLine(Vector2Int b, Vector2Int d, Vector2Int t)
-    {
-        Vector2Int diff = t - b;
-        if (d.x != 0 && diff.y == 0 && Mathf.Sign(diff.x) == Mathf.Sign(d.x)) return true;
-        if (d.y != 0 && diff.x == 0 && Mathf.Sign(diff.y) == Mathf.Sign(d.y)) return true;
-        return false;
-    }
-
-    private bool CanBombSlide(Vector2Int s, Vector2Int d, Vector2Int t)
-    {
-        Vector2Int c = s + d;
-        while (c != t)
-        {
-            if (_mapChannel.IsSolid(c) || _mapChannel.IsDestructible(c)) return false;
-            c += d;
-            if (Vector2Int.Distance(s, c) > 15) break;
-        }
-        return true;
-    }
+    private bool CheckHasItemAt(Vector2Int pos) => Physics2D.OverlapCircle((Vector2)pos, 0.3f, _itemLayer) != null;
+    private bool CheckHasBombAt(Vector2Int pos) => Physics2D.OverlapCircle((Vector2)pos, 0.3f, _bombLayer) != null;
 
     #endregion
 
-    #region Navigation & Movement
+    #region Navigation & Safety
 
     private void ExecuteRequestMove(Character botId, StatsController stats, Vector2Int targetGrid)
     {
@@ -435,7 +278,6 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         Vector2 currentWorld = stats.transform.position;
         Vector2 dir = targetWorld - currentWorld;
 
-        // ถึงช่องที่ต้องการแล้ว หยุดนิ่ง
         if (dir.magnitude < 0.1f)
         {
             stats.transform.position = targetWorld;
@@ -444,41 +286,51 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         }
 
         Vector2 finalDir = Vector2.zero;
-
-        // 🚀 [FIX] ระบบเข้าโค้งอัจฉริยะ (Smart Cornering / Auto-Center)
-        // แก้อาการเดินสีมุมกำแพง บอทจะจัดศูนย์ตัวเองให้ตรงเลนก่อนเดินเข้าซอย
         if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
         {
-            // เป้าหมายหลักอยู่แกนซ้ายขวา
-            if (Mathf.Abs(dir.y) > 0.15f)
-            {
-                // แต่แกนบนล่างยังเบี้ยวอยู่ ให้เดินปรับศูนย์แกน Y ก่อน
-                finalDir.y = Mathf.Sign(dir.y);
-            }
-            else
-            {
-                // ศูนย์ตรงแล้ว เลี้ยวซ้ายขวาได้เลย พร้อมล็อคแกน Y ให้อยู่กึ่งกลางเป๊ะ
-                finalDir.x = Mathf.Sign(dir.x);
-                stats.transform.position = new Vector2(currentWorld.x, targetWorld.y);
-            }
+            if (Mathf.Abs(dir.y) > 0.15f) finalDir.y = Mathf.Sign(dir.y);
+            else { finalDir.x = Mathf.Sign(dir.x); stats.transform.position = new Vector2(currentWorld.x, targetWorld.y); }
         }
         else
         {
-            // เป้าหมายหลักอยู่แกนบนล่าง
-            if (Mathf.Abs(dir.x) > 0.15f)
-            {
-                // แต่แกนซ้ายขวายังเบี้ยวอยู่ ให้เดินปรับศูนย์แกน X ก่อน
-                finalDir.x = Mathf.Sign(dir.x);
-            }
-            else
-            {
-                // ศูนย์ตรงแล้ว เลี้ยวบนล่างได้เลย พร้อมล็อคแกน X ให้อยู่กึ่งกลางเป๊ะ
-                finalDir.y = Mathf.Sign(dir.y);
-                stats.transform.position = new Vector2(targetWorld.x, currentWorld.y);
-            }
+            if (Mathf.Abs(dir.x) > 0.15f) finalDir.x = Mathf.Sign(dir.x);
+            else { finalDir.y = Mathf.Sign(dir.y); stats.transform.position = new Vector2(targetWorld.x, currentWorld.y); }
         }
 
-        _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(finalDir));
+        _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(finalDir.normalized));
+    }
+
+    private bool IsThreatenedByBomb(Vector2Int pos, int dangerRadius)
+    {
+        if (CheckHasBombAt(pos)) return true;
+        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+        foreach (var d in dirs)
+        {
+            for (int i = 1; i <= dangerRadius; i++)
+            {
+                Vector2Int checkPos = pos + d * i;
+                if (_mapChannel.IsSolid(checkPos) || _mapChannel.IsDestructible(checkPos)) { if (CheckHasBombAt(checkPos)) return true; break; }
+                if (CheckHasBombAt(checkPos)) return true;
+            }
+        }
+        for (int x = -1; x <= 1; x++) { for (int y = -1; y <= 1; y++) { if (CheckHasBombAt(pos + new Vector2Int(x, y))) return true; } }
+        return false;
+    }
+
+    private void ExecuteRequestBomb(Character botId, StatsController stats)
+    {
+        if (stats.BombsRemaining <= 0) return;
+        var brain = _botBrains[botId];
+        if (Time.time - brain.LastBombTime < 0.4f) return;
+        stats.transform.position = (Vector2)WorldToGrid(stats.transform.position);
+        _botInputChannel.RaiseEvent(botId, ActionType.PlaceBomb, null);
+        brain.LastBombTime = Time.time;
+    }
+
+    private Vector2Int ExecuteFindNearestBox(Vector2Int start, int maxRadius)
+    {
+        for (int r = 1; r <= maxRadius; r++) { for (int x = -r; x <= r; x++) { for (int y = -r; y <= r; y++) { if (Mathf.Abs(x) != r && Mathf.Abs(y) != r) continue; Vector2Int pos = start + new Vector2Int(x, y); if (_mapChannel.IsDestructible(pos)) return pos; } } }
+        return new Vector2Int(-9999, -9999);
     }
 
     private List<Vector2Int> GetFullPath(Vector2Int start, Vector2Int target, bool ignoreBoxes, int safeRadius)
@@ -487,7 +339,6 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         Queue<Vector2Int> q = new Queue<Vector2Int>();
         Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
         q.Enqueue(start); cameFrom[start] = start;
-
         int limit = 400;
         while (q.Count > 0 && limit-- > 0)
         {
@@ -500,29 +351,20 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 {
                     bool isDanger = _mapChannel.IsDangerous(next) || IsThreatenedByBomb(next, safeRadius);
                     if (!ignoreBoxes && isDanger) continue;
-
                     if (ignoreBoxes || _mapChannel.IsWalkable(next)) { cameFrom[next] = curr; q.Enqueue(next); }
                 }
             }
         }
-        if (cameFrom.ContainsKey(target))
-        {
-            Vector2Int curr = target;
-            while (curr != start) { path.Add(curr); curr = cameFrom[curr]; }
-            path.Reverse();
-        }
+        if (cameFrom.ContainsKey(target)) { Vector2Int curr = target; while (curr != start) { path.Add(curr); curr = cameFrom[curr]; } path.Reverse(); }
         return path;
     }
 
     private List<Vector2Int> GetEscapePath(Vector2Int start, Vector2Int target)
     {
         List<Vector2Int> path = new List<Vector2Int>();
-        if (start == target) return path;
-
         Queue<Vector2Int> q = new Queue<Vector2Int>();
         Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
         q.Enqueue(start); cameFrom[start] = start;
-
         int limit = 400;
         while (q.Count > 0 && limit-- > 0)
         {
@@ -531,18 +373,10 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
             {
                 Vector2Int next = curr + d;
-                if (!cameFrom.ContainsKey(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next))
-                {
-                    cameFrom[next] = curr; q.Enqueue(next);
-                }
+                if (!cameFrom.ContainsKey(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next)) { cameFrom[next] = curr; q.Enqueue(next); }
             }
         }
-        if (cameFrom.ContainsKey(target))
-        {
-            Vector2Int curr = target;
-            while (curr != start) { path.Add(curr); curr = cameFrom[curr]; }
-            path.Reverse();
-        }
+        if (cameFrom.ContainsKey(target)) { Vector2Int curr = target; while (curr != start) { path.Add(curr); curr = cameFrom[curr]; } path.Reverse(); }
         return path;
     }
 
@@ -551,24 +385,14 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         Queue<Vector2Int> q = new Queue<Vector2Int>();
         HashSet<Vector2Int> v = new HashSet<Vector2Int>();
         q.Enqueue(origin); v.Add(origin);
-
         while (q.Count > 0)
         {
             Vector2Int curr = q.Dequeue();
-
-            if (!_mapChannel.IsDangerous(curr) && !IsThreatenedByBomb(curr, safeRadius) && _mapChannel.IsWalkable(curr))
-            {
-                return curr;
-            }
-
+            if (!_mapChannel.IsDangerous(curr) && !IsThreatenedByBomb(curr, safeRadius) && _mapChannel.IsWalkable(curr)) return curr;
             foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
             {
                 Vector2Int next = curr + d;
-                if (!v.Contains(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next))
-                {
-                    v.Add(next);
-                    q.Enqueue(next);
-                }
+                if (!v.Contains(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next)) { v.Add(next); q.Enqueue(next); }
             }
         }
         return new Vector2Int(-9999, -9999);
@@ -586,12 +410,20 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         }
     }
 
-    private void ExecuteWanderLogic(Character botId, StatsController stats, BotBrainState brain)
+    private bool ExecuteTryKickBomb(Character botId, StatsController stats, BotBrainState brain)
     {
-        brain.Behavior = BotFullStateMachine.Patrolling;
-        Vector2Int myGrid = WorldToGrid(stats.transform.position);
-        brain.WanderTarget = myGrid + new Vector2Int(Random.Range(-3, 4), Random.Range(-3, 4));
-        brain.CurrentFullPath = GetFullPath(myGrid, brain.WanderTarget, false, stats.CurrentExplosionRange + 1);
+        Vector2Int myPos = WorldToGrid(stats.transform.position);
+        foreach (var dir in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
+        {
+            Vector2Int bombPos = myPos + dir;
+            if (CheckHasBombAt(bombPos))
+            {
+                Vector2Int diff = brain.TargetGridPos - bombPos;
+                bool isTargetInLine = (dir.x != 0 && diff.y == 0 && Mathf.Sign(diff.x) == Mathf.Sign(dir.x)) || (dir.y != 0 && diff.x == 0 && Mathf.Sign(diff.y) == Mathf.Sign(dir.y));
+                if (isTargetInLine) { ExecuteRequestMove(botId, stats, bombPos); return true; }
+            }
+        }
+        return false;
     }
     #endregion
 }

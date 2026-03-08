@@ -170,6 +170,6 @@ public sealed class BombController : MonoBehaviour
         Vector2 snappedPos = _isSmartSnapping ? _targetSnapPos : new Vector2(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y));
 
         _rigidbody.MovePosition(snappedPos);
-        transform.position = new Vector3(snappedPos.x, snappedPos.y, 0f); // ชัวร์ 100% ว่าย้ายจริง
+        transform.position = new(snappedPos.x, snappedPos.y); // ชัวร์ 100% ว่าย้ายจริง
     }
 }
