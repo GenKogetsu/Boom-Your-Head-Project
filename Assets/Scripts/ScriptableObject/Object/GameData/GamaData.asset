@@ -22,5 +22,6 @@ MonoBehaviour:
   - CharacterType: 4
     Prefab: {fileID: 2111925533556937854, guid: 297363e95a3520e45b9f04bcb32cd4e8, type: 3}
   PlayerCount: 2
-  SelectedCharacters: 0100000003000000
+  SelectedPlayers: 0100000002000000
+  SelectedBots: 0300000004000000
   CurrentStageIndex: 0

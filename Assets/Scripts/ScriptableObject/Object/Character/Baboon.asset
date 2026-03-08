@@ -9,7 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f54ec277adcc5fd4bb34c3e37abcd467, type: 3}
-  m_Name: CharacterRegistry
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterRegistrySO
-  _inspectorView: []
+  m_Script: {fileID: 11500000, guid: 1af581ec0b9355246838052a5e0a092f, type: 3}
+  m_Name: Baboon
+  m_EditorClassIdentifier: Assembly-CSharp::LivingThingsScriptable
+  livingName: 2
+  baseHp: 3
+  baseAtk: 1
+  baseSpeed: 5
+  baseBombAmount: 1
+  baseExplosionRange: 1

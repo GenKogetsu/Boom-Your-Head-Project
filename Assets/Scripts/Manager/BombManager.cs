@@ -5,10 +5,6 @@ using Genoverrei.Libary;
 
 namespace BombGame.Manager
 {
-    /// <summary>
-    /// <para> (TH) : ศูนย์จัดการระบบระเบิด การงอกของไฟ และการแจ้งเตือนพื้นที่อันตรายผ่าน MapChannel </para>
-    /// <para> (EN) : Bomb system manager handling flame spread and danger zone alerts via MapChannel. </para>
-    /// </summary>
     public sealed class BombManager : MonoBehaviour, ISignalListener
     {
         #region Variable
@@ -18,9 +14,9 @@ namespace BombGame.Manager
         [SerializeField] private BombChannelSO _bombChannel;
 
         [Header("Data Registry")]
-        [SerializeField] private CharacterRegistrySO _characterRegistry; // 🚀 เพิ่มสมุดทะเบียน
+        [SerializeField] private CharacterRegistrySO _characterRegistry;
 
-        [Header("Pool Keys (Use Prefab Name)")]
+        [Header("Pool Keys")]
         [SerializeField] private BombController _bombPrefab;
         [SerializeField] private ExplosionAnimationController _explosionPrefab;
 
@@ -28,7 +24,10 @@ namespace BombGame.Manager
         [SerializeField] private LayerMask _bombLayer;
         [SerializeField] private Vector2 _collisionCheckSize = new Vector2(0.8f, 0.8f);
 
-        #endregion //Variable
+        // 🚀 [NEW] ตัวดักคิวการวางเพื่อไม่ให้วางซ้อนในเฟรมเดียวกัน
+        private HashSet<Vector2Int> _pendingPlacements = new HashSet<Vector2Int>();
+
+        #endregion
 
         #region Unity Lifecycle
 
@@ -56,7 +55,13 @@ namespace BombGame.Manager
             }
         }
 
-        #endregion //Unity Lifecycle
+        // 🚀 [NEW] เคลียร์คิวการจองทุกจบเฟรม
+        private void LateUpdate()
+        {
+            if (_pendingPlacements.Count > 0) _pendingPlacements.Clear();
+        }
+
+        #endregion
 
         #region Public Methods (ISignalListener)
 
@@ -64,11 +69,57 @@ namespace BombGame.Manager
         {
             if (signal.Action == ActionType.PlaceBomb)
             {
-                TryPlaceBomb(signal.SignalTarget); // SignalTarget คือ Enum Character
+                TryPlaceBomb(signal.SignalTarget);
             }
         }
 
-        #endregion //Public Methods
+        #endregion
+
+        #region Private Logic (Placement)
+
+        private void TryPlaceBomb(Character ownerType)
+        {
+            StatsController stats = _characterRegistry.GetStats(ownerType);
+
+            if (stats == null) return;
+
+            // 🚀 [FAIR PLAY] เช็คระเบิดในตัว
+            if (stats.BombsRemaining <= 0) return;
+
+            // คำนวณพิกัดให้เป็นจำนวนเต็ม
+            Vector2Int spawnGridPos = Vector2Int.RoundToInt(new Vector2(
+                Mathf.Round(stats.transform.position.x),
+                Mathf.Round(stats.transform.position.y)
+            ));
+
+            // 🚀 [GUARD] เช็คว่าพิกัดนี้มีคนจองวางในเฟรมนี้หรือยัง หรือมีระเบิดวางอยู่แล้วไหม
+            if (_pendingPlacements.Contains(spawnGridPos)) return;
+            if (Physics2D.OverlapBox((Vector2)spawnGridPos, _collisionCheckSize, 0f, _bombLayer)) return;
+
+            if (_bombPrefab == null) return;
+
+            // จองพื้นที่
+            _pendingPlacements.Add(spawnGridPos);
+
+            var bomb = ObjectPoolManager.Instance.Get<BombController>(
+                _bombPrefab.name,
+                (Vector3)(Vector2)spawnGridPos,
+                Quaternion.identity
+            );
+
+            if (bomb != null)
+            {
+                new BombBuilder()
+                    .SetRadius(stats.CurrentExplosionRange)
+                    .Build(bomb, spawnGridPos, stats);
+
+                // 🚀 [DONE] หักจำนวนระเบิดออกทันที
+                stats.BombsRemaining--;
+                Debug.Log($"<b><color=#FF8A65>[BombManager]</color></b> 💣 {ownerType} placed. Left: {stats.BombsRemaining}");
+            }
+        }
+
+        #endregion
 
         #region Private Logic (Explosion Flow)
 
@@ -113,18 +164,12 @@ namespace BombGame.Manager
                 Quaternion.identity
             );
 
-            if (effect != null)
-            {
-                effect.Setup(part, direction);
-            }
+            if (effect != null) effect.Setup(part, direction);
         }
 
         private void ExecuteHandleFlameCollision(Vector3Int gridPos, Collider2D intruder)
         {
-            if (_mapChannel != null)
-            {
-                _mapChannel.RaiseDestruction(gridPos, intruder);
-            }
+            if (_mapChannel != null) _mapChannel.RaiseDestruction(gridPos, intruder);
 
             if (intruder != null && intruder.CompareTag("Bomb"))
             {
@@ -135,37 +180,6 @@ namespace BombGame.Manager
             }
         }
 
-        #endregion //Explosion Flow
-
-        #region Private Logic (Placement)
-
-        private void TryPlaceBomb(Character ownerType)
-        {
-            // 🚀 ดึง StatsController จากสมุดทะเบียนโดยตรง! (ไม่ต้อง Cache เองแล้ว)
-            StatsController stats = _characterRegistry.GetCharacter(ownerType);
-
-            if (stats == null) return;
-            if (stats.BombsRemaining <= 0) return;
-
-            Vector2 spawnPos = new Vector2(Mathf.Round(stats.transform.position.x), Mathf.Round(stats.transform.position.y));
-
-            if (Physics2D.OverlapBox(spawnPos, _collisionCheckSize, 0f, _bombLayer)) return;
-
-            if (_bombPrefab == null) return;
-
-            var bomb = ObjectPoolManager.Instance.Get<BombController>(_bombPrefab.name, (Vector3)spawnPos, Quaternion.identity);
-
-            if (bomb != null)
-            {
-                new BombBuilder()
-                    .SetRadius(stats.CurrentExplosionRange)
-                    .Build(bomb, Vector2Int.RoundToInt(spawnPos), stats);
-
-                stats.BombsRemaining--;
-                Debug.Log($"<b><color=#FF8A65>[BombManager]</color></b> 💣 {ownerType} placed a bomb. ({stats.BombsRemaining} left)");
-            }
-        }
-
-        #endregion //Placement
+        #endregion
     }
 }

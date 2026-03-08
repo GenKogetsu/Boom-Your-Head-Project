@@ -4,7 +4,7 @@
 public enum Character { None, Ryuwen, Baboon, Edigan, Terbi, All }
 
 /// <summary> (TH) : ประเภทของตัวละคร | (EN) : Character types </summary>
-public enum Charactertype { Player, Bot }
+public enum Charactertype {None , Player, Bot }
 
 /// <summary> (TH) : ประเภทของการกระทำ | (EN) : Action types </summary>
 public enum ActionType { PlaceBomb, Move }

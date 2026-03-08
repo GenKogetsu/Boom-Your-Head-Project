@@ -9,7 +9,7 @@ public sealed class MoveController : MonoBehaviour, ITileMoveable
 {
     #region Variable
     [Header("Observer")]
-    [SerializeField] private MapChannelSO _mapChannel; // 🚀 เพิ่มช่องสำหรับลากสายไฟแผนที่
+    [SerializeField] private MapChannelSO _mapChannel;
 
     [Header("Components")]
     [ReadOnly][SerializeField] private StatsController _stats;
@@ -26,17 +26,12 @@ public sealed class MoveController : MonoBehaviour, ITileMoveable
     [SerializeField] private Vector2 _offset = Vector2.zero;
 
     private Vector2 _collisionCheckSize = new(0.5f, 0.5f);
-    private Vector2 _lastDiscreteInput;
     #endregion
 
     #region ITileMoveable Implementation
 
-    // 🚀 Implement Property ตาม Interface ให้หาย Error
     public MapChannelSO MapChannel => _mapChannel;
-
-    // 🚀 แก้ Null Propagation ของ Unity (_stats != null)
     public float MoveSpeed => _stats != null ? _stats.CurrentSpeed : 5f;
-
     public Rigidbody2D Rigidbody => _rb2;
     public Vector2 TargetPosition { get => _targetPosition; set => _targetPosition = value; }
     public bool IsMoving { get => _isMoving; set => _isMoving = value; }
@@ -49,15 +44,22 @@ public sealed class MoveController : MonoBehaviour, ITileMoveable
     public void Move(Vector2 input)
     {
         _moveInputValue = input;
+
         if (input == Vector2.zero) return;
 
         Vector2 currentDiscrete = TileMoveAbility.GetDiscreteDirection(input);
-        if (currentDiscrete != _lastDiscreteInput)
+
+        if (currentDiscrete != Vector2.zero)
         {
             LastMoveDirection = currentDiscrete;
-            TileMoveAbility.ProcessMoveRequest(this);
+
+            // 🚀 [FIX] ถ้ายืนนิ่งอยู่ (!isMoving) ให้พยายามประมวลผลการเดินเสมอ
+            // ไม่ต้องเช็คซ้ำแล้วว่าเปลี่ยนทิศไหม ป้องกันบั๊กยืนอัดกำแพงแล้วค้าง
+            if (!_isMoving)
+            {
+                TileMoveAbility.ProcessMoveRequest(this);
+            }
         }
-        _lastDiscreteInput = currentDiscrete;
     }
     #endregion
 
@@ -66,7 +68,6 @@ public sealed class MoveController : MonoBehaviour, ITileMoveable
     {
         _targetPosition = TileMoveAbility.SnapToGrid(transform.position, _offset.x, _offset.y);
 
-        // 🚀 แก้ไข Rigidbody null check
         if (_rb2 != null)
         {
             _rb2.position = _targetPosition;
@@ -95,7 +96,6 @@ public sealed class MoveController : MonoBehaviour, ITileMoveable
         Vector2 nextDir = TileMoveAbility.GetDiscreteDirection(_moveInputValue);
         Vector2 checkPos = _targetPosition + nextDir;
 
-        // เช็คสิ่งกีดขวาง
         bool isNextBlocked = _moveInputValue != Vector2.zero && TileMoveAbility.IsPositionOccupied(this, checkPos);
 
         Gizmos.color = _isMoving ? new Color(0, 1, 0, 0.3f) : (isNextBlocked ? new Color(1, 0, 0, 0.3f) : new Color(0, 1, 0, 0.3f));

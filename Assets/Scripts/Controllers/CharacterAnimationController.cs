@@ -23,12 +23,13 @@ public class CharacterAnimationController : MonoBehaviour
         if (_moveController == null || _characterAnimator == null) return;
 
         // ดึงทิศทางล่าสุด (เพื่อให้หน้าหันค้างไว้ตอนหยุดเดิน)
-        var moveXinput = _moveController.LastMoveDirection.x;
-        var moveYinput = _moveController.LastMoveDirection.y;
+
+        var lastMoveXinput = _moveController.LastMoveDirection.x;
+        var lastMoveYinput = _moveController.LastMoveDirection.y;
 
         // ดึงสถานะการเดินของจริงจาก Interface
         _characterAnimator.SetBool("IsMoving", _moveController.IsMoving);
-        _characterAnimator.SetFloat("MoveX", moveXinput);
-        _characterAnimator.SetFloat("MoveY", moveYinput);
+        _characterAnimator.SetFloat("LastMoveX", lastMoveXinput);   
+        _characterAnimator.SetFloat("LastMoveY", lastMoveYinput);
     }
 }

@@ -11,8 +11,8 @@ public class LivingThingsScriptable : ScriptableObject
 {
     [Header("Info")]
     public Character livingName;
-    public Charactertype livingType;
-    public int livingId;
+    //public Charactertype livingType;
+    //public int livingId;
 
     [Header("Base Stats")]
     public int baseHp = 3;

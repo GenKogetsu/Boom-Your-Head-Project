@@ -7,12 +7,13 @@ using Genoverrei.Libary;
 /// <para> (EN) : Character action listener that filters signals; if not the target, forwards to bots for input prediction. </para>
 /// </summary>
 [RequireComponent(typeof(MoveController))]
+[RequireComponent(typeof(StatsController))]
 public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
 {
     #region Variable
 
     [Header("Identity")]
-    [SerializeField] private Character _myCharacterId;
+    [SerializeField] private StatsController _stats;
 
     [Header("Local Controllers")]
     [SerializeField] private MoveController _moveController;
@@ -29,7 +30,12 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
 
     private void OnValidate()
     {
-        if (_moveController == null) _moveController = GetComponent<MoveController>();
+        if (_moveController == null) _moveController = this.GetComponent<MoveController>();
+
+        if (_stats == null)
+        {
+            _stats = this.GetComponent<StatsController>();
+        }
     }
 
     private void OnEnable()
@@ -51,7 +57,7 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
     public void OnHandleSignal(ISignal signal)
     {
         // 🚀 1. ตรวจสอบเป้าหมาย (Identity Check)
-        if (signal.SignalTarget != _myCharacterId)
+        if (signal.SignalTarget != _stats.LivingName)
         {
             // 🤖 ถ้าไม่ใช่ของเรา -> ส่งต่อให้บอทเอาไปคำนวณ "ดักทาง"
             ExecuteForwardToBot(signal);
@@ -87,7 +93,7 @@ public sealed class CharacterActionListener : MonoBehaviour, ISignalListener
             Mathf.RoundToInt(transform.position.y)
         );
 
-        Debug.Log($"<b><color=#FF5252>[Action]</color></b> Requesting bomb spawn at {gridPos} from {_myCharacterId}");
+        Debug.Log($"<b><color=#FF5252>[Action]</color></b> Requesting bomb spawn at {gridPos} from {_stats.LivingName}");
         _bombSpawnChannel.RaiseEvent(gridPos);
     }
 

@@ -93,11 +93,9 @@ namespace Genoverrei.DesignPattern
                     string key = entry.Prefab.name;
                     if (_poolDictionary.ContainsKey(key)) continue;
 
-                    // สร้าง Container เพื่อความเป็นระเบียบใน Hierarchy
                     GameObject containerObj = new GameObject($"Pool_{key}");
                     containerObj.transform.SetParent(transform);
 
-                    // สร้าง Pool ใหม่พร้อมส่งค่า LimitOverPercent ไปคำนวณ
                     var pool = new ObjectPool<Transform>(
                         entry.Prefab.transform,
                         entry.MaxSize,
@@ -107,13 +105,28 @@ namespace Genoverrei.DesignPattern
 
                     _poolDictionary.Add(key, pool);
 
-                    // สร้าง Object รอไว้ตาม InitialSize
+                    // --- แก้ไขจุดนี้ครับพี่ ---
                     int countToPreWarm = Mathf.Min(entry.InitialSize, entry.MaxSize);
                     List<Transform> tempStack = new List<Transform>();
-                    for (int i = 0; i < countToPreWarm; i++) tempStack.Add(pool.Get());
-                    foreach (var item in tempStack) pool.Return(item);
 
-                    Debug.Log($"<b><color=#4FC3F7>[Pool Initialized]</color></b> 🚀 <b>{key}</b> (Init: {countToPreWarm} | Max: {entry.MaxSize} | Over: {entry.LimitOverPercent}%)");
+                    for (int i = 0; i < countToPreWarm; i++)
+                    {
+                        Transform item = pool.Get();
+                        if (item != null)
+                        {
+                            // 🚀 สั่งปิดการทำงานก่อนส่งคืนเข้าคิว
+                            item.gameObject.SetActive(false);
+                            tempStack.Add(item);
+                        }
+                    }
+
+                    foreach (var item in tempStack)
+                    {
+                        pool.Return(item);
+                    }
+                    // -------------------------
+
+                    Debug.Log($"<b><color=#4FC3F7>[Pool Initialized]</color></b> 🚀 <b>{key}</b> (Init: {countToPreWarm} | Max: {entry.MaxSize})");
                 }
             }
         }

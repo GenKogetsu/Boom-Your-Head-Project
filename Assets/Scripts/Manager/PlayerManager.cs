@@ -1,13 +1,14 @@
-﻿using UnityEngine;
+﻿using System;
 using System.Collections.Generic;
-using Genoverrei.DesignPattern;
+using UnityEngine;
 using System.Linq;
+using Genoverrei.DesignPattern;
+using Genoverrei.Libary;
 
 namespace Genoverrei.Manager
 {
     /// <summary>
     /// <para> (TH) : ตัวจัดการระบบผู้เล่น คอยสุ่มจุดเกิดให้ตัวละคร จัดการโหมดการเล่น และระบบเติมบอทอัตโนมัติ </para>
-    /// <para> (EN) : Player manager handling random spawn points, game modes, and auto-filling bots. </para>
     /// </summary>
     public sealed class PlayerManager : MonoBehaviour
     {
@@ -27,27 +28,32 @@ namespace Genoverrei.Manager
         {
             if (_sessionData == null) return;
             _sessionData.PlayerCount = Mathf.Clamp(count, 1, 4);
-            _sessionData.SelectedCharacters.Clear();
+
+            _sessionData.SelectedPlayers.Clear();
+            _sessionData.SelectedBots.Clear();
+
             Debug.Log($"<b><color=#4FC3F7>[PlayerManager]</color></b> Mode set to: <b>{count} Players</b>");
         }
 
         public void SelectCharacter(Character characterType)
         {
             if (_sessionData == null) return;
-            if (_sessionData.SelectedCharacters.Count < _sessionData.PlayerCount)
+
+            int totalSelected = _sessionData.SelectedPlayers.Count + _sessionData.SelectedBots.Count;
+
+            if (totalSelected < _sessionData.PlayerCount)
             {
-                _sessionData.SelectedCharacters.Add(characterType);
-                Debug.Log($"<b><color=#69F0AE>[PlayerManager]</color></b> Player {_sessionData.SelectedCharacters.Count} selected: <b>{characterType}</b>");
+                _sessionData.SelectedPlayers.Add(characterType);
+                Debug.Log($"<b><color=#69F0AE>[PlayerManager]</color></b> Player added: <b>{characterType}</b>");
             }
         }
 
-        /// <summary>
-        /// 🧹 เรียกใช้ก่อนเปลี่ยน Scene เพื่อล้างกระดาน
-        /// </summary>
         public void PrepareForNextMap()
         {
             _characterRegistry.Clear();
-            ObjectPoolManager.Instance.ReleaseAllPools();
+            if (ObjectPoolManager.Instance != null)
+                ObjectPoolManager.Instance.ReleaseAllPools();
+
             Debug.Log("<b><color=#FFEB3B>[PlayerManager]</color></b> 🧹 Cleanup all registries and pools for next map.");
         }
 
@@ -63,7 +69,7 @@ namespace Genoverrei.Manager
                 return;
             }
 
-            // 🤖 1. ระบบ Auto-Fill Bots (ถ้าเลือกมาไม่ครบจำนวนโหมด)
+            // 🤖 1. ระบบ Auto-Fill Bots
             if (_autoFillBots) ExecuteAutoFillBots();
 
             // 🎲 2. สุ่มเลือก Set จุดเกิด
@@ -72,14 +78,13 @@ namespace Genoverrei.Manager
             List<Vector3> availablePositions = new List<Vector3>(selectedSet);
 
             _characterRegistry.Clear();
-            List<Character> startingPlayers = new List<Character>();
+            List<Character> startingParticipants = new List<Character>();
 
             // 🚀 3. เริ่มกระบวนการ Spawn
-            foreach (Character type in _sessionData.SelectedCharacters)
+            foreach (Character type in _sessionData.AllMatchParticipants)
             {
                 if (availablePositions.Count == 0) break;
 
-                // สุ่มจับฉลากตำแหน่ง (แบบไม่ซ้ำ)
                 int randPosIndex = UnityEngine.Random.Range(0, availablePositions.Count);
                 Vector3 spawnPos = availablePositions[randPosIndex];
                 availablePositions.RemoveAt(randPosIndex);
@@ -87,45 +92,48 @@ namespace Genoverrei.Manager
                 GameObject prefab = _sessionData.GetCharacterPrefab(type);
                 if (prefab != null)
                 {
-                    // ♻️ ดึงจาก Pool
                     StatsController stats = ObjectPoolManager.Instance.Get<StatsController>(prefab.name, spawnPos, Quaternion.identity);
 
                     if (stats != null)
                     {
                         stats.ResetStats();
-                        _characterRegistry.Register(type, stats);
-                        startingPlayers.Add(type);
 
-                        Debug.Log($"<b><color=#4FC3F7>[PlayerManager]</color></b> 👤 Spawned: <b>{type}</b> at {spawnPos}");
+                        // =========================================================
+                        // ✅ FIX: ส่ง stats.gameObject เข้าไปเก็บใน Registry (เป็น obj)
+                        // เพื่อให้ตรงกับ Register(Character type, GameObject obj)
+                        // =========================================================
+                        _characterRegistry.Register(type, stats.gameObject);
+
+                        startingParticipants.Add(type);
+
+                        string roleColor = _sessionData.IsBot(type) ? "#FFCA28" : "#4FC3F7";
+                        string roleTag = _sessionData.IsBot(type) ? "BOT" : "PLAYER";
+
+                        Debug.Log($"<b><color={roleColor}>[PlayerManager]</color></b> 👤 Spawned {roleTag}: <b>{type}</b> at {spawnPos}");
                     }
                 }
             }
 
-            // 🏆 4. แจ้ง MatchManager ให้เริ่มนับยอดคนรอดชีวิต
-            if (_matchManager != null) _matchManager.InitializeMatch(startingPlayers);
-            Debug.Log($"<b><color=#69F0AE>[PlayerManager]</color></b> ✅ ระบบสุ่มจุดเกิดทำงานสำเร็จ (ใช้ Set: {randomSetIndex})");
+            // 🏆 4. แจ้ง MatchManager
+            if (_matchManager != null) _matchManager.InitializeMatch(startingParticipants);
+            Debug.Log($"<b><color=#69F0AE>[PlayerManager]</color></b> ✅ Spawn Complete (Total: {startingParticipants.Count})");
         }
 
-        /// <summary>
-        /// 🤖 Logic สุ่มตัวละครมาเติมช่องว่างให้เต็มตามจำนวน PlayerCount
-        /// </summary>
         private void ExecuteAutoFillBots()
         {
-            int currentCount = _sessionData.SelectedCharacters.Count;
+            int currentCount = _sessionData.SelectedPlayers.Count + _sessionData.SelectedBots.Count;
             int needed = _sessionData.PlayerCount - currentCount;
 
             if (needed <= 0) return;
 
             Debug.Log($"<b><color=#FFEB3B>[PlayerManager]</color></b> 🤖 Filling {needed} Bots to complete the match.");
 
-            // ดึง Character ทั้งหมดที่มีใน Enum (สมมติว่าพี่ทำ Character Library ไว้ครบ)
-            // หรือจะสุ่มจากตัวที่ยังไม่ได้โดนเลือกก็ได้
+            var allTypes = System.Enum.GetValues(typeof(Character)).Cast<Character>().Where(c => c != Character.None).ToList();
+
             for (int i = 0; i < needed; i++)
             {
-                // สุ่มตัวละครมา 1 ตัว (ตัวอย่างนี้อาจจะสุ่มซ้ำได้ ถ้าพี่อยากได้บอทหน้าซ้ำ)
-                // หรือพี่จะสร้าง Enum Character.Bot มาโดยเฉพาะก็ได้ครับ
-                Character randomBot = (Character)UnityEngine.Random.Range(0, System.Enum.GetValues(typeof(Character)).Length);
-                _sessionData.SelectedCharacters.Add(randomBot);
+                Character randomBot = allTypes[UnityEngine.Random.Range(0, allTypes.Count)];
+                _sessionData.SelectedBots.Add(randomBot);
             }
         }
 

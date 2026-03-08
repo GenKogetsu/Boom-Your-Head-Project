@@ -201,7 +201,7 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
         if (_characterCollider != null) _characterCollider.enabled = false;
 
         // ส่ง Event แจ้งว่าตายแล้ว
-        EventBus.Instance.Publish(new CharacterDeathEvent(this.gameObject, _statsData != null ? _statsData.livingType : Charactertype.Bot));
+        EventBus.Instance.Publish(new CharacterDeathEvent(this.gameObject, _statsData.livingName));
 
         // ปิดสคริปต์ตัวเองเพื่อหยุด Logic การทำงาน
         this.enabled = false;
