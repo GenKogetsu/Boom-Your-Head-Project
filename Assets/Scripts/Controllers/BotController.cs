@@ -18,8 +18,11 @@ public sealed class BotController : MonoBehaviour, IPathfindable
     [SerializeField] private float _thinkInterval = 0.12f;
     [Range(0.1f, 1f)]
     [SerializeField] private float _aggressiveness = 0.8f;
+
+    [Header("Radar Layers (ตั้งค่าให้ตรงกับเกม)")]
     [SerializeField] private int _itemSearchRadius = 8;
     [SerializeField] private LayerMask _itemLayer;
+    [SerializeField] private LayerMask _bombLayer;
 
     [Header("Combat Readiness Thresholds (Offsets)")]
     [Tooltip("ถ้าเลือดถึงค่านี้ จะเริ่มบวก")]
@@ -98,6 +101,18 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 Gizmos.DrawWireSphere((Vector3)(Vector2)brain.TargetBombTile, 0.25f);
             }
 
+            if (brain.Behavior == BotFullStateMachine.Fleeing && brain.SafeTarget.x != -9999)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawWireCube((Vector2)brain.SafeTarget, Vector3.one * 0.7f);
+            }
+
+            if (brain.TargetItemPos.x != -9999)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireCube((Vector2)brain.TargetItemPos, Vector3.one * 0.5f);
+            }
+
             Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
             Gizmos.DrawCube((Vector2)WorldToGrid(kvp.Value.transform.position), Vector3.one * 0.9f);
         }
@@ -123,16 +138,58 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             _currentPathfindOrigin = myGridPos;
             brain.CurrentFullPath.Clear();
             brain.TargetBombTile = new Vector2Int(-9999, -9999);
-            brain.TargetItemPos = new Vector2Int(-9999, -9999);
 
-            // 🚀 คำนวณระยะอันตรายจากระเบิด (Stats + 1) 
             int safeRadius = stats.CurrentExplosionRange + 1;
+            bool isCurrentlyThreatened = _mapChannel.IsDangerous(myGridPos) || IsThreatenedByBomb(myGridPos, safeRadius);
 
-            // 🎯 PRIORITY 1: DODGE & SURVIVAL (หลบรัศมีระเบิดและไฟ)
-            if (_mapChannel.IsDangerous(myGridPos) || IsThreatenedByBomb(myGridPos, safeRadius))
+            // 🎯 PRIORITY 1: DODGE & SURVIVAL
+            if (isCurrentlyThreatened)
             {
                 brain.Behavior = BotFullStateMachine.Fleeing;
-                brain.CurrentFullPath = ExecuteGetSafePath(myGridPos, safeRadius);
+                bool needNewSafeSpot = brain.SafeTarget.x == -9999 ||
+                                       _mapChannel.IsDangerous(brain.SafeTarget) ||
+                                       IsThreatenedByBomb(brain.SafeTarget, safeRadius) ||
+                                       myGridPos == brain.SafeTarget;
+
+                if (needNewSafeSpot)
+                {
+                    brain.SafeTarget = ExecuteGetSafeSpot(myGridPos, safeRadius);
+                }
+
+                if (brain.SafeTarget.x != -9999)
+                {
+                    brain.CurrentFullPath = GetEscapePath(myGridPos, brain.SafeTarget);
+                    if (brain.CurrentFullPath.Count > 0)
+                    {
+                        ExecuteRequestMove(botId, stats, brain.CurrentFullPath[0]);
+                    }
+                    else
+                    {
+                        ExecuteRequestMove(botId, stats, myGridPos);
+                    }
+                }
+                else
+                {
+                    ExecuteRequestMove(botId, stats, myGridPos);
+                }
+                continue;
+            }
+            else
+            {
+                brain.SafeTarget = new Vector2Int(-9999, -9999);
+            }
+
+            // 🎯 PRIORITY 2: ITEM HUNTING
+            bool needNewItem = brain.TargetItemPos.x == -9999 || !CheckHasItemAt(brain.TargetItemPos);
+            if (needNewItem)
+            {
+                brain.TargetItemPos = ExecuteFindNearestItem(myGridPos);
+            }
+
+            if (brain.TargetItemPos.x != -9999)
+            {
+                brain.Behavior = BotFullStateMachine.Patrolling;
+                brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetItemPos, false, safeRadius);
 
                 if (brain.CurrentFullPath.Count > 0)
                 {
@@ -140,24 +197,13 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 }
                 else
                 {
-                    ExecuteRequestMove(botId, stats, myGridPos); // ไม่มีทางหนี ยืนรอมิราเคิล
+                    ExecuteRequestMove(botId, stats, myGridPos);
+                    if (myGridPos != brain.TargetItemPos)
+                    {
+                        brain.TargetItemPos = new Vector2Int(-9999, -9999);
+                    }
                 }
-                continue; // หนีตายสำคัญสุด ข้ามสเตปอื่นทั้งหมด
-            }
-
-            // 🎯 PRIORITY 2: ITEM HUNTING
-            Vector2Int nearestItem = ExecuteFindNearestItem(myGridPos);
-            if (nearestItem.x != -9999)
-            {
-                brain.Behavior = BotFullStateMachine.Patrolling;
-                brain.TargetItemPos = nearestItem;
-                brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetItemPos, false, safeRadius);
-
-                if (brain.CurrentFullPath.Count > 0)
-                {
-                    ExecuteRequestMove(botId, stats, brain.CurrentFullPath[0]);
-                    continue;
-                }
+                continue;
             }
 
             // --- วิเคราะห์สถานะ (Combat Readiness) ---
@@ -219,7 +265,7 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
                 if (ExecuteTryKickBomb(botId, stats, brain)) continue;
 
-                // วิ่งไล่ล่า (อ้อมระเบิด)
+                // วิ่งไล่ล่า
                 brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetGridPos, true, safeRadius);
                 if (brain.CurrentFullPath.Count > 0)
                 {
@@ -245,34 +291,46 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         }
     }
 
-    #region Bomb & Safety Logic
+    #region Radar & Safety Logic
 
-    // 🚀 [NEW] ระบบเช็คว่าพิกัดนี้อยู่ในรัศมีทำลายล้างของระเบิดหรือไม่
+    private bool CheckHasBombAt(Vector2Int pos)
+    {
+        Collider2D hit = Physics2D.OverlapCircle((Vector2)pos, 0.3f, _bombLayer);
+        return hit != null;
+    }
+
+    private bool CheckHasItemAt(Vector2Int pos)
+    {
+        Collider2D hit = Physics2D.OverlapCircle((Vector2)pos, 0.3f, _itemLayer);
+        return hit != null;
+    }
+
     private bool IsThreatenedByBomb(Vector2Int pos, int dangerRadius)
     {
-        if (_mapChannel.HasBomb(pos)) return true;
+        if (CheckHasBombAt(pos)) return true;
 
-        // เช็คแนวกางเขน (Crossfire)
         Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
         foreach (var d in dirs)
         {
             for (int i = 1; i <= dangerRadius; i++)
             {
                 Vector2Int checkPos = pos + d * i;
-                if (_mapChannel.IsSolid(checkPos)) break; // กำแพงกันระเบิดไว้ ปลอดภัยในทิศนี้
-                if (_mapChannel.HasBomb(checkPos)) return true; // มีระเบิดกำลังเล็งมาที่เรา!
+                if (_mapChannel.IsSolid(checkPos) || _mapChannel.IsDestructible(checkPos))
+                {
+                    if (CheckHasBombAt(checkPos)) return true;
+                    break;
+                }
+                if (CheckHasBombAt(checkPos)) return true;
             }
         }
 
-        // เช็คช่องรอบตัว 8 ทิศทาง ป้องกันเดินไปสีกับระเบิดใกล้ๆ
         for (int x = -1; x <= 1; x++)
         {
             for (int y = -1; y <= 1; y++)
             {
-                if (_mapChannel.HasBomb(pos + new Vector2Int(x, y))) return true;
+                if (CheckHasBombAt(pos + new Vector2Int(x, y))) return true;
             }
         }
-
         return false;
     }
 
@@ -335,7 +393,7 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         foreach (var dir in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
         {
             Vector2Int bombPos = myPos + dir;
-            if (_mapChannel.HasBomb(bombPos))
+            if (CheckHasBombAt(bombPos))
             {
                 if (IsTargetInLine(bombPos, dir, brain.TargetGridPos) && CanBombSlide(bombPos, dir, brain.TargetGridPos))
                 {
@@ -369,27 +427,60 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
     #endregion
 
-    #region Navigation
+    #region Navigation & Movement
 
     private void ExecuteRequestMove(Character botId, StatsController stats, Vector2Int targetGrid)
     {
         Vector2 targetWorld = (Vector2)targetGrid;
-        Vector2 dir = targetWorld - (Vector2)stats.transform.position;
+        Vector2 currentWorld = stats.transform.position;
+        Vector2 dir = targetWorld - currentWorld;
 
+        // ถึงช่องที่ต้องการแล้ว หยุดนิ่ง
         if (dir.magnitude < 0.1f)
         {
             stats.transform.position = targetWorld;
             _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+            return;
+        }
+
+        Vector2 finalDir = Vector2.zero;
+
+        // 🚀 [FIX] ระบบเข้าโค้งอัจฉริยะ (Smart Cornering / Auto-Center)
+        // แก้อาการเดินสีมุมกำแพง บอทจะจัดศูนย์ตัวเองให้ตรงเลนก่อนเดินเข้าซอย
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+        {
+            // เป้าหมายหลักอยู่แกนซ้ายขวา
+            if (Mathf.Abs(dir.y) > 0.15f)
+            {
+                // แต่แกนบนล่างยังเบี้ยวอยู่ ให้เดินปรับศูนย์แกน Y ก่อน
+                finalDir.y = Mathf.Sign(dir.y);
+            }
+            else
+            {
+                // ศูนย์ตรงแล้ว เลี้ยวซ้ายขวาได้เลย พร้อมล็อคแกน Y ให้อยู่กึ่งกลางเป๊ะ
+                finalDir.x = Mathf.Sign(dir.x);
+                stats.transform.position = new Vector2(currentWorld.x, targetWorld.y);
+            }
         }
         else
         {
-            Vector2 finalDir = dir.normalized;
-            if (Mathf.Abs(finalDir.x) > Mathf.Abs(finalDir.y)) finalDir.y = 0; else finalDir.x = 0;
-            _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(finalDir.normalized));
+            // เป้าหมายหลักอยู่แกนบนล่าง
+            if (Mathf.Abs(dir.x) > 0.15f)
+            {
+                // แต่แกนซ้ายขวายังเบี้ยวอยู่ ให้เดินปรับศูนย์แกน X ก่อน
+                finalDir.x = Mathf.Sign(dir.x);
+            }
+            else
+            {
+                // ศูนย์ตรงแล้ว เลี้ยวบนล่างได้เลย พร้อมล็อคแกน X ให้อยู่กึ่งกลางเป๊ะ
+                finalDir.y = Mathf.Sign(dir.y);
+                stats.transform.position = new Vector2(targetWorld.x, currentWorld.y);
+            }
         }
+
+        _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(finalDir));
     }
 
-    // 🚀 [FIX] อัปเกรด A* ให้เดินเลี่ยงวงระเบิด
     private List<Vector2Int> GetFullPath(Vector2Int start, Vector2Int target, bool ignoreBoxes, int safeRadius)
     {
         List<Vector2Int> path = new List<Vector2Int>();
@@ -407,9 +498,8 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 Vector2Int next = curr + d;
                 if (!cameFrom.ContainsKey(next) && !_mapChannel.IsSolid(next))
                 {
-                    // 🛑 ห้ามเดินเข้าไปในวงระเบิดเด็ดขาด (ยกเว้นจะสั่งชนกล่อง)
                     bool isDanger = _mapChannel.IsDangerous(next) || IsThreatenedByBomb(next, safeRadius);
-                    if (isDanger) continue;
+                    if (!ignoreBoxes && isDanger) continue;
 
                     if (ignoreBoxes || _mapChannel.IsWalkable(next)) { cameFrom[next] = curr; q.Enqueue(next); }
                 }
@@ -424,53 +514,64 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         return path;
     }
 
-    // 🚀 [NEW] หาเส้นทางหนีไปสู่จุดที่ปลอดภัยจริงๆ แบบรวดเดียว
-    private List<Vector2Int> ExecuteGetSafePath(Vector2Int origin, int safeRadius)
+    private List<Vector2Int> GetEscapePath(Vector2Int start, Vector2Int target)
     {
+        List<Vector2Int> path = new List<Vector2Int>();
+        if (start == target) return path;
+
         Queue<Vector2Int> q = new Queue<Vector2Int>();
         Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        q.Enqueue(start); cameFrom[start] = start;
 
-        q.Enqueue(origin);
-        cameFrom[origin] = origin;
-
-        Vector2Int safeSpot = origin;
-        bool found = false;
-
-        while (q.Count > 0)
+        int limit = 400;
+        while (q.Count > 0 && limit-- > 0)
         {
             Vector2Int curr = q.Dequeue();
-
-            // ปลอดภัยจริงๆ คือ ไม่มีไฟ ไม่อยู่ในระยะระเบิด และยืนได้
-            if (!_mapChannel.IsDangerous(curr) && !IsThreatenedByBomb(curr, safeRadius) && _mapChannel.IsWalkable(curr))
-            {
-                safeSpot = curr;
-                found = true;
-                break;
-            }
-
+            if (curr == target) break;
             foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
             {
                 Vector2Int next = curr + d;
                 if (!cameFrom.ContainsKey(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next))
                 {
-                    cameFrom[next] = curr;
+                    cameFrom[next] = curr; q.Enqueue(next);
+                }
+            }
+        }
+        if (cameFrom.ContainsKey(target))
+        {
+            Vector2Int curr = target;
+            while (curr != start) { path.Add(curr); curr = cameFrom[curr]; }
+            path.Reverse();
+        }
+        return path;
+    }
+
+    private Vector2Int ExecuteGetSafeSpot(Vector2Int origin, int safeRadius)
+    {
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        HashSet<Vector2Int> v = new HashSet<Vector2Int>();
+        q.Enqueue(origin); v.Add(origin);
+
+        while (q.Count > 0)
+        {
+            Vector2Int curr = q.Dequeue();
+
+            if (!_mapChannel.IsDangerous(curr) && !IsThreatenedByBomb(curr, safeRadius) && _mapChannel.IsWalkable(curr))
+            {
+                return curr;
+            }
+
+            foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
+            {
+                Vector2Int next = curr + d;
+                if (!v.Contains(next) && !_mapChannel.IsSolid(next) && _mapChannel.IsWalkable(next))
+                {
+                    v.Add(next);
                     q.Enqueue(next);
                 }
             }
         }
-
-        List<Vector2Int> path = new List<Vector2Int>();
-        if (found)
-        {
-            Vector2Int curr = safeSpot;
-            while (curr != origin)
-            {
-                path.Add(curr);
-                curr = cameFrom[curr];
-            }
-            path.Reverse();
-        }
-        return path;
+        return new Vector2Int(-9999, -9999);
     }
 
     private void ExecuteRefreshTarget()

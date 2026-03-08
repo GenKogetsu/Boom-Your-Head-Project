@@ -2958,6 +2958,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: b50f40cb9c912304784f062da5e390d1, type: 2}
     - target: {fileID: 2450954885875033247, guid: f9e5380636bbe4843ad8b576598dbba5, type: 3}
+      propertyPath: _bombLayer.m_Bits
+      value: 8192
+      objectReference: {fileID: 0}
+    - target: {fileID: 2450954885875033247, guid: f9e5380636bbe4843ad8b576598dbba5, type: 3}
       propertyPath: _itemLayer.m_Bits
       value: 4096
       objectReference: {fileID: 0}
