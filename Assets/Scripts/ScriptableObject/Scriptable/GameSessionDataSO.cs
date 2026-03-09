@@ -2,12 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// <para> (TH) : เก็บข้อมูลเซสชันการเล่น แยกรายชื่อผู้เล่นและบอท เพื่อความสะดวกในการจัดการ AI และ UI </para>
-/// <para> (EN) : Stores game session data, separating players and bots for easier AI and UI management. </para>
-/// </summary>
 [CreateAssetMenu(fileName = "GameSessionData", menuName = "BombGame/Data/GameSession")]
-public class GameSessionDataSO : ScriptableObject
+public class GameSessionDataSO : ScriptableObject , IAmScriptableObject
 {
     [Serializable]
     public struct CharacterMapping
@@ -21,11 +17,7 @@ public class GameSessionDataSO : ScriptableObject
 
     [Header("Match Setup")]
     public int PlayerCount = 1;
-
-    [Tooltip("(TH) : รายชื่อตัวละครที่เป็นผู้เล่นจริง (Human)")]
     public List<Character> SelectedPlayers = new List<Character>();
-
-    [Tooltip("(TH) : รายชื่อตัวละครที่เป็นบอท (Bot)")]
     public List<Character> SelectedBots = new List<Character>();
 
     [Header("Progression")]
@@ -33,9 +25,6 @@ public class GameSessionDataSO : ScriptableObject
 
     private Dictionary<Character, GameObject> _cachedLibrary;
 
-    /// <summary>
-    /// (TH) : รวมรายชื่อตัวละครทั้งหมด (ทั้งคนและบอท) เพื่อใช้ตอนสั่ง Spawn
-    /// </summary>
     public List<Character> AllMatchParticipants
     {
         get
@@ -46,23 +35,44 @@ public class GameSessionDataSO : ScriptableObject
         }
     }
 
+    public string ScriptName => this.name;
+
     private void OnEnable() => _cachedLibrary = null;
 
-    /// <summary>
-    /// <para> (TH) : ล้างข้อมูลเซสชันกลับเป็นค่าเริ่มต้น </para>
-    /// </summary>
     public void ResetSession()
     {
         CurrentStageIndex = 0;
         SelectedPlayers.Clear();
         SelectedBots.Clear();
         PlayerCount = 1;
-        Debug.Log("<b><color=#FFEB3B>[Session]</color></b> ♻️ Session Data has been reset.");
     }
 
-    /// <summary>
-    /// (TH) : ตรวจสอบว่า Character นี้เป็นผู้เล่นหรือบอท
-    /// </summary>
+    // 🚀 [NEW] ฟังก์ชันบันทึกข้อมูลและเติมบอทอัตโนมัติ
+    public void SetupMatch(List<Character> humanPlayers)
+    {
+        ResetSession();
+
+        // 1. บันทึกรายชื่อคนเล่น
+        SelectedPlayers.AddRange(humanPlayers);
+        PlayerCount = SelectedPlayers.Count;
+
+        // 2. เติมบอทจากตัวละครที่เหลือใน Library (อัตโนมัติ)
+        // วนลูปตาม Character ทั้งหมดที่มีใน Enum (หรือตามที่ลิสต์ไว้ใน Library)
+        foreach (var mapping in _characterLibrary)
+        {
+            Character charType = mapping.CharacterType;
+
+            // ถ้าตัวละครนี้ไม่มีคนเลือก ให้เอาไปใส่ในลิสต์บอท
+            if (!SelectedPlayers.Contains(charType))
+            {
+                SelectedBots.Add(charType);
+            }
+        }
+
+        Debug.Log($"<b><color=#4CAF50>[Session]</color></b> Match Setup Complete: " +
+                  $"{SelectedPlayers.Count} Players, {SelectedBots.Count} Bots.");
+    }
+
     public bool IsBot(Character type) => SelectedBots.Contains(type);
 
     public GameObject GetCharacterPrefab(Character type)
@@ -76,8 +86,14 @@ public class GameSessionDataSO : ScriptableObject
                     _cachedLibrary.Add(mapping.CharacterType, mapping.Prefab);
             }
         }
-
         _cachedLibrary.TryGetValue(type, out var result);
         return result;
+    }
+
+    public void ResetScripts()
+    {
+        SelectedBots.Clear();
+        SelectedPlayers.Clear();
+        AllMatchParticipants.Clear();
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace BombGame.EnumSpace;
 
 /// <summary> (TH) : ตัวละครในเกม | (EN) : Characters in the game </summary>
-public enum Character { None, Ryuwen, Baboon, Edigan, Terbi, All }
+public enum Character { None, Ryuwen,  Edigan, Baboon, Terbi, All }
 
 /// <summary> (TH) : ประเภทของตัวละคร | (EN) : Character types </summary>
 public enum Charactertype {None , Player, Bot }
@@ -17,6 +17,8 @@ public enum BombState { Moving, NonCritical, Critical }
 
 /// <summary> (TH) : ส่วนของระเบิดที่ถูกระเบิด | (EN) : Parts of the bomb explosion </summary>
 public enum BombPart { Start, Middle, End }
+
+public enum LoadSceneType { start, end  }
 
 /// <summary>
 /// <para> Summary : </para>

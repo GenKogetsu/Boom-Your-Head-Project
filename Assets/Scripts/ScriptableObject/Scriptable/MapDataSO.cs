@@ -7,7 +7,7 @@ using System;
 /// <para> (EN) : Stores map spawn point data for PlayerManager to randomize. </para>
 /// </summary>
 [CreateAssetMenu(fileName = "MapData", menuName = "BombGame/Data/MapData")]
-public class MapDataSO : ScriptableObject
+public class MapDataSO : ScriptableObject , IAmScriptableObject
 {
     [Serializable]
     public struct SpawnSet
@@ -22,4 +22,11 @@ public class MapDataSO : ScriptableObject
     [Header("Spawn Configurations")]
     [Tooltip("ใส่พิกัดจุดเกิดหลายๆ แบบให้ระบบสุ่มเลือก")]
     public List<SpawnSet> AvailableSpawnSets = new List<SpawnSet>();
+
+    public string ScriptName => this.name;
+
+    public void ResetScripts()
+    {
+        AvailableSpawnSets.Clear();
+    }
 }

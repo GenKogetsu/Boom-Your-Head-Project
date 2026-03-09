@@ -62,7 +62,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 5153982295660239679}
         m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: OnMove
+        m_MethodName: OnMoveP1
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -73,12 +73,12 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 351f2ccd-1f9f-44bf-9bec-d62ac5c5f408
-    m_ActionName: 'Player/Move[/Keyboard/w,/Keyboard/upArrow,/Keyboard/s,/Keyboard/downArrow,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow]'
+    m_ActionName: 'Player/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 5153982295660239679}
         m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: OnPlaceBomb
+        m_MethodName: OnMoveP2
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -88,12 +88,44 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_ActionId: 5efb0f84-6275-46ff-a6ba-a627e125b0de
-    m_ActionName: 'Player/PlaceBomb[/Keyboard/shift]'
+    m_ActionId: d24cb579-768a-4869-a05f-06ded138cafe
+    m_ActionName: 'Player/P2Move[/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 5153982295660239679}
+        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
+        m_MethodName: OnPlaceBombP1
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 96612f53-93a2-4cfc-b17d-e5f6cb3a28a7
+    m_ActionName: 'Player/P1Bomb[/Keyboard/leftShift]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 5153982295660239679}
+        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
+        m_MethodName: OnPlaceBombP2
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 30f42393-09d6-4cd4-80b3-bd0ec427a663
+    m_ActionName: 'Player/P2Bomb[/Keyboard/rightShift]'
   - m_PersistentCalls:
       m_Calls: []
-    m_ActionId: 68025328-9729-403e-aa40-d898f4f69c36
-    m_ActionName: 'Ui/PressAnyKey[/Keyboard/anyKey]'
+    m_ActionId: 934d9f77-c75a-481a-831c-aa09b26ac13d
+    m_ActionName: 'Ui/PressAnyKey[/Keyboard/anyKey,/Mouse/leftButton]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: Keyboard&Mouse
   m_DefaultActionMap: Player
@@ -113,3 +145,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InputManager
   _botInputChannel: {fileID: 11400000, guid: b50f40cb9c912304784f062da5e390d1, type: 2}
   _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  playerInput: {fileID: 5480118823380935668}

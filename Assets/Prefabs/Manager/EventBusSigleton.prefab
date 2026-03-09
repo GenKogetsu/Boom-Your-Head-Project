@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4535908063660362214}
   - component: {fileID: 5260735913535946109}
   m_Layer: 0
-  m_Name: EventBus
+  m_Name: EventBusSigleton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -7,7 +7,7 @@ using NaughtyAttributes;
 /// <para> (TH) : ศูนย์กลางรวบรวมคำสั่งทั้งหมด (ผู้เล่นและบอท) เพื่อกระจาย CharacterAction เข้าสู่ EventBus </para>
 /// <para> (EN) : Central hub aggregating all commands (player and bot) to broadcast CharacterAction to EventBus. </para>
 /// </summary>
-public sealed class InputManager : MonoBehaviour
+public sealed class InputManager : MonoBehaviour , IPauseWhenSceneAnimation
 {
     #region Variable
 
@@ -17,6 +17,8 @@ public sealed class InputManager : MonoBehaviour
     [Header("Session Reference")]
     [Required]
     [SerializeField] private GameSessionDataSO _sessionData;
+
+    [SerializeField] private PlayerInput playerInput;
 
     #endregion //Variable
 
@@ -29,6 +31,14 @@ public sealed class InputManager : MonoBehaviour
         {
             _botInputChannel.OnBotActionTriggered += ExecuteHandleBotInput;
         }
+
+        if (EventBus.Instance != null) EventBus.Instance.Subscribe<LoadSceneEvent>(WhenAnimationPlayed);
+
+    }
+
+    public void WhenAnimationPlayed(LoadSceneEvent loadSceneEvent)
+    {
+        playerInput.enabled = !loadSceneEvent.Isloding;
     }
 
     private void OnDisable()
@@ -37,6 +47,9 @@ public sealed class InputManager : MonoBehaviour
         {
             _botInputChannel.OnBotActionTriggered -= ExecuteHandleBotInput;
         }
+
+        if (EventBus.Instance != null) EventBus.Instance.Unsubscribe<LoadSceneEvent>(WhenAnimationPlayed);
+
     }
 
     #endregion //Unity Lifecycle

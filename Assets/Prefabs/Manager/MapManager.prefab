@@ -48,10 +48,9 @@ MonoBehaviour:
   _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
   _solidTilemaps:
   - {fileID: 0}
-  - {fileID: 0}
   _destructibleTilemaps:
   - {fileID: 0}
-  _dropChance: 100
+  _dropChance: 30
   _itemPrefabs:
   - {fileID: 2564380002654690261, guid: 6e7d92c604bca2c4aaa413a9d579652e, type: 3}
   - {fileID: 2564380002654690261, guid: c1f0a088d60d07f4cab08a76946d75a0, type: 3}

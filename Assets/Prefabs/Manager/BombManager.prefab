@@ -46,6 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BombManager
   _mapChannel: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
   _bombChannel: {fileID: 11400000, guid: 50aa77ce2976cfd4abbce7cfca91caed, type: 2}
+  _characterRegistry: {fileID: 11400000, guid: e6c4e0765d1ca06449e95675b4e08bc3, type: 2}
   _bombPrefab: {fileID: 645362926042336693, guid: e10230ffd5e90c3489946b2652130401, type: 3}
   _explosionPrefab: {fileID: 2488732353793296490, guid: 7d7e9c7ce1308484e863a8b4489e090f, type: 3}
   _bombLayer:

@@ -50,7 +50,7 @@ namespace Genoverrei.Manager
 
         public void PrepareForNextMap()
         {
-            _characterRegistry.Clear();
+            _characterRegistry.ResetScripts();
             if (ObjectPoolManager.Instance != null)
                 ObjectPoolManager.Instance.ReleaseAllPools();
 
@@ -77,7 +77,7 @@ namespace Genoverrei.Manager
             var selectedSet = _currentMapData.AvailableSpawnSets[randomSetIndex].SpawnPositions;
             List<Vector3> availablePositions = new List<Vector3>(selectedSet);
 
-            _characterRegistry.Clear();
+            _characterRegistry.ResetScripts();
             List<Character> startingParticipants = new List<Character>();
 
             // 🚀 3. เริ่มกระบวนการ Spawn

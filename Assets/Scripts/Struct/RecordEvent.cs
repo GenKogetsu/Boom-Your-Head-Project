@@ -57,3 +57,5 @@ public record struct CharacterDeathEvent(GameObject Victim, Character Character)
 /// <para> (EN) : When a tile type on the map changes. </para>
 /// </summary>
 public record struct TileChangedEvent(Vector2Int GridPos, TileType NewType) : IEvent;
+
+public record struct LoadSceneEvent (bool Isloding) : IEvent;

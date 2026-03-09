@@ -1,4 +1,5 @@
-﻿using NaughtyAttributes;
+﻿using Genoverrei.DesignPattern;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -36,23 +37,31 @@ public class MainMenuController : MonoBehaviour
     public void OnClickExitButton()
     {
         Debug.Log("Exit Game");
-        Application.Quit();
+
+        if (SceneEffectController.Instance == null) return;
+
+        SceneEffectController.Instance.QuitGameAfterPlayEffect();
     }
 
     public void OnClickSiglePlayer()
     {
-        //เขียนค่าคนเดียว
-        SceneManager.LoadScene("ChooseCharacterScene");
+        if (SceneEffectController.Instance == null) return;
+        
+        SceneEffectController.Instance.LoadSceneAndPlayEffect("ChooseCharacterScene");
+        
     }
 
     public void OnClickMultiPlayer()
     {
-        //เขียนค่าเล่นหลายคน
-        SceneManager.LoadScene("ChooseCharacterScene");
+        if (SceneEffectController.Instance == null) return;
+        
+        SceneEffectController.Instance.LoadSceneAndPlayEffect("ChooseCharacterScene");
     }
 
     private void ChangedState(string state) 
     {
+        if (SceneEffectController.Instance.SceneEffectCoroutine != null) return;
+
         _animator.SetBool("ToMainMenu", state == "ToMainMenu" ? true : false);
         _animator.SetBool("ToPlayeMode", state == "ToPlayeMode" ? true : false);
         _animator.SetBool("ToCredit", state == "ToCredit" ? true : false);

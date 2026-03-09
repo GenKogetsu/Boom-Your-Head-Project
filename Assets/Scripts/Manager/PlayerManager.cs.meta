@@ -1,2 +1,15 @@
 fileFormatVersion: 2
 guid: 03d74ea58c8cc7b4abb334837919b1ce
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  - _currentMapData: {fileID: 11400000, guid: d935dd1ffab023b4290bd8b204e7224a, type: 2}
+  - _characterRegistry: {fileID: 11400000, guid: e6c4e0765d1ca06449e95675b4e08bc3, type: 2}
+  - _matchManager: {fileID: 11400000, guid: 00cb96fb659e3bf469152ddf048ae60a, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

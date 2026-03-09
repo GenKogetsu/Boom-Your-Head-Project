@@ -60,7 +60,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotController
   _mapChannel: {fileID: 11400000, guid: fd18bf6ecf75d814d89e64e71aaab33a, type: 2}
-  _sessionChannel: {fileID: 11400000, guid: 5562627c1c7866b4690bdfddaffe3194, type: 2}
-  _targetToDrive: 0
+  _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  _characterRegistry: {fileID: 11400000, guid: e6c4e0765d1ca06449e95675b4e08bc3, type: 2}
+  _botInputChannel: {fileID: 11400000, guid: b50f40cb9c912304784f062da5e390d1, type: 2}
   _thinkInterval: 0.2
-  _targetGridPos: {x: 0, y: 0}
+  _aggressiveness: 0.8
+  _itemSearchRadius: 8
+  _entitySearchRadius: 4
+  _itemLayer:
+    serializedVersion: 2
+    m_Bits: 4096
+  _bombLayer:
+    serializedVersion: 2
+    m_Bits: 8192
+  _entityLayer:
+    serializedVersion: 2
+    m_Bits: 32768
+  _readyHp: 3
+  _readyRange: 3
+  _readySpeed: 5
+  _readyBombCount: 3
+  _panicHpThreshold: 2
+  _targetsToDrive: 
