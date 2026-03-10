@@ -19,32 +19,55 @@ public sealed class CharacterSelectionController : MonoBehaviour
     [Header("Current States")]
     [ReadOnly][SerializeField] private int _p1Index = 0;
     [ReadOnly][SerializeField] private int _p2Index = 1;
+
     [ReadOnly][SerializeField] private bool _p1Ready = false;
     [ReadOnly][SerializeField] private bool _p2Ready = false;
 
     [Header("Settings")]
-    [SerializeField] private float _inputDelay = 1.0f;
+    [SerializeField] private float _inputDelay = 1f;
+
     private bool _canControl = false;
 
     [Header("Data Reference")]
     [SerializeField] private GameSessionDataSO _sessionData;
 
+    private bool IsSinglePlayer => _sessionData != null && _sessionData.PlayerCount == 1;
+
+    private Character GetCharacterFromIndex(int index)
+    {
+        return (Character)(index + 1);
+    }
+
     private void Start()
     {
-        // 🚀 เช็คโหมดจาก SO: ถ้า PlayerCount เป็น 1 ให้ซ่อน Pointer P2 ทันที
-        if (_sessionData != null)
+        if (_sessionData == null)
         {
-            if (_p1Pointer != null) _p1Pointer.gameObject.SetActive(true);
-            if (_p2Pointer != null) _p2Pointer.gameObject.SetActive(_sessionData.PlayerCount > 1);
+            Debug.LogError("GameSessionDataSO is missing!");
+            return;
+        }
 
-            // ถ้าเล่นคนเดียว ให้ P2 Ready หลอกๆ ไว้เลย เพื่อให้เข้าเงื่อนไข StartGame
-            if (_sessionData.PlayerCount == 1) _p2Ready = true;
+        SetupPointers();
+        StartCoroutine(EnableInputRoutine());
+    }
+
+    private void SetupPointers()
+    {
+        if (_p1Pointer != null)
+            _p1Pointer.gameObject.SetActive(true);
+
+        if (_p2Pointer != null)
+            _p2Pointer.gameObject.SetActive(!IsSinglePlayer);
+
+        if (IsSinglePlayer)
+        {
+            _p2Ready = true;
+            _p2Index = -1;
         }
 
         RefreshVisuals(1);
-        if (_sessionData.PlayerCount > 1) RefreshVisuals(2);
 
-        StartCoroutine(EnableInputRoutine());
+        if (!IsSinglePlayer)
+            RefreshVisuals(2);
     }
 
     private IEnumerator EnableInputRoutine()
@@ -54,8 +77,7 @@ public sealed class CharacterSelectionController : MonoBehaviour
         _canControl = true;
     }
 
-    #region Input Callbacks (เช็ค _canControl ทุกอัน)
-
+    // ✅ รวม P1 และ P2 Move เป็นเมธอด Generic
     public void OnP1Move(InputAction.CallbackContext context)
     {
         if (!_canControl || !context.performed || _p1Ready) return;
@@ -64,60 +86,150 @@ public sealed class CharacterSelectionController : MonoBehaviour
 
     public void OnP2Move(InputAction.CallbackContext context)
     {
-        // 🚀 ถ้า SO บอกว่าเล่นคนเดียว ไม่ต้องรับ Input P2
-        if (!_canControl || _sessionData.PlayerCount <= 1 || !context.performed || _p2Ready) return;
+        if (!_canControl || IsSinglePlayer || !context.performed || _p2Ready) return;
         ProcessMove(ref _p2Index, context.ReadValue<Vector2>(), 2);
     }
 
+    // ✅ รวม P1 และ P2 Confirm เป็นเมธอด Generic
     public void OnP1Confirm(InputAction.CallbackContext context)
     {
         if (!_canControl || !context.performed || _p1Ready) return;
-        _p1Ready = true;
-        if (_characterSlots != null) _characterSlots[_p1Index].color = Color.gray;
-        CheckStartGame();
+
+        if (!IsSinglePlayer && _p1Index == _p2Index)
+            return;
+
+        ConfirmSelection(1);
     }
 
     public void OnP2Confirm(InputAction.CallbackContext context)
     {
-        if (!_canControl || _sessionData.PlayerCount <= 1 || !context.performed || _p2Ready) return;
-        _p2Ready = true;
-        if (_characterSlots != null) _characterSlots[_p2Index].color = Color.gray;
-        CheckStartGame();
+        if (!_canControl || IsSinglePlayer || !context.performed || _p2Ready) return;
+
+        if (_p1Index == _p2Index)
+            return;
+
+        ConfirmSelection(2);
     }
 
-    #endregion
+    // ✅ รวม P1 และ P2 Cancel เป็นเมธอด Generic
+    public void OnP1Cancel(InputAction.CallbackContext context)
+    {
+        if (!_canControl || !context.performed) return;
+        CancelSelection(1);
+    }
+
+    public void OnP2Cancel(InputAction.CallbackContext context)
+    {
+        if (!_canControl || IsSinglePlayer || !context.performed) return;
+        CancelSelection(2);
+    }
 
     private void ProcessMove(ref int index, Vector2 moveInput, int playerNum)
     {
-        if (moveInput.x > 0.5f && index % 2 == 0) index++;
-        else if (moveInput.x < -0.5f && index % 2 != 0) index--;
-        else if (moveInput.y < -0.5f && index < 2) index += 2;
-        else if (moveInput.y > 0.5f && index >= 2) index -= 2;
+        int newIndex = index;
+
+        if (moveInput.x > 0.5f && index % 2 == 0)
+            newIndex++;
+        else if (moveInput.x < -0.5f && index % 2 != 0)
+            newIndex--;
+        else if (moveInput.y < -0.5f && index < 2)
+            newIndex += 2;
+        else if (moveInput.y > 0.5f && index >= 2)
+            newIndex -= 2;
+
+        if (!IsSinglePlayer)
+        {
+            if (playerNum == 1 && newIndex == _p2Index) return;
+            if (playerNum == 2 && newIndex == _p1Index) return;
+        }
+
+        index = newIndex;
         RefreshVisuals(playerNum);
+    }
+
+    // ✅ Generic ConfirmSelection
+    private void ConfirmSelection(int playerNum)
+    {
+        if (playerNum == 1)
+        {
+            _p1Ready = true;
+            SetSlotLocked(_p1Index);
+        }
+        else if (playerNum == 2)
+        {
+            _p2Ready = true;
+            SetSlotLocked(_p2Index);
+        }
+
+        CheckStartGame();
+    }
+
+    // ✅ Generic CancelSelection
+    private void CancelSelection(int playerNum)
+    {
+        if (playerNum == 1 && _p1Ready)
+        {
+            _p1Ready = false;
+            UnlockSlot(_p1Index);
+        }
+        else if (playerNum == 2 && _p2Ready)
+        {
+            _p2Ready = false;
+            UnlockSlot(_p2Index);
+        }
     }
 
     private void RefreshVisuals(int playerNum)
     {
-        if (playerNum == 1) _p1Pointer.transform.position = _characterSlots[_p1Index].transform.position + _p1Offset;
-        else if (playerNum == 2) _p2Pointer.transform.position = _characterSlots[_p2Index].transform.position + _p2Offset;
+        if (_characterSlots == null || _characterSlots.Count == 0) return;
+
+        Image pointer = playerNum == 1 ? _p1Pointer : _p2Pointer;
+        int index = playerNum == 1 ? _p1Index : _p2Index;
+        Vector3 offset = playerNum == 1 ? _p1Offset : _p2Offset;
+
+        if (pointer != null)
+        {
+            pointer.transform.position = _characterSlots[index].transform.position + offset;
+        }
+    }
+
+    private void SetSlotLocked(int index)
+    {
+        if (_characterSlots == null || index < 0 || index >= _characterSlots.Count) return;
+        _characterSlots[index].color = Color.gray;
+    }
+
+    private void UnlockSlot(int index)
+    {
+        if (_characterSlots == null || index < 0 || index >= _characterSlots.Count) return;
+        _characterSlots[index].color = Color.white;
     }
 
     private void CheckStartGame()
     {
-        if (_p1Ready && _p2Ready)
+        if (!_p1Ready || !_p2Ready) return;
+
+        List<Character> selected = new List<Character>();
+        List<int> selectedIndices = new List<int>(); // ✅ เก็บ index
+
+        selected.Add(_sessionData.GetCharacterFromLibraryIndex(_p1Index));
+        selectedIndices.Add(_p1Index);
+
+        if (_sessionData.PlayerCount > 1)
         {
-            List<Character> selected = new List<Character>();
-            selected.Add((Character)_p1Index);
-            if (_sessionData.PlayerCount > 1) selected.Add((Character)_p2Index);
+            selected.Add(_sessionData.GetCharacterFromLibraryIndex(_p2Index));
+            selectedIndices.Add(_p2Index);
+        }
 
-            // 🚀 เรียก SetupMatch ใน SO เพื่อบันทึกคนเล่นและเติมบอท
-            _sessionData.SetupMatch(selected);
+        // ✅ ส่ง index ไปด้วย
+        _sessionData.SetupMatch(selected, selectedIndices);
 
-            if (SceneEffectController.Instance != null)
-            {
-                if (TryGetComponent<PlayerInput>(out var input)) input.DeactivateInput();
-                SceneEffectController.Instance.LoadSceneAndPlayEffect("Level 1");
-            }
+        if (SceneEffectController.Instance != null)
+        {
+            if (TryGetComponent<PlayerInput>(out var input))
+                input.DeactivateInput();
+
+            SceneEffectController.Instance.LoadSceneAndPlayEffect("Level 1");
         }
     }
 }

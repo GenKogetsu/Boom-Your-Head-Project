@@ -5,7 +5,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GameSessionData", menuName = "BombGame/Data/GameSession")]
 public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
 {
-    // ... CharacterMapping และ _characterLibrary คงเดิม ...
     [Serializable]
     public struct CharacterMapping
     {
@@ -17,7 +16,7 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
     [SerializeField] private List<CharacterMapping> _characterLibrary = new List<CharacterMapping>();
 
     [Header("Match Setup")]
-    public int PlayerCount = 0; // 🚀 ตัวนี้จะถูก MainMenu เป็นคนสั่ง
+    public int PlayerCount = 0;
     public List<Character> SelectedPlayers = new List<Character>();
     public List<Character> SelectedBots = new List<Character>();
 
@@ -36,9 +35,19 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
         }
     }
 
-    public string ScriptName => this.name;
+    public string ScriptName => name;
 
-    private void OnEnable() => _cachedLibrary = null;
+    public Character GetCharacterFromLibraryIndex(int index)
+    {
+        if (index >= 0 && index < _characterLibrary.Count)
+            return _characterLibrary[index].CharacterType;
+        return Character.None;
+    }
+
+    private void OnEnable()
+    {
+        _cachedLibrary = null;
+    }
 
     public void ResetScripts()
     {
@@ -46,35 +55,36 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
         PlayerCount = 0;
         SelectedPlayers.Clear();
         SelectedBots.Clear();
-        // 🚀 เอา PlayerCount = 1; ออกจากตรงนี้ เพื่อไม่ให้มันรีเซ็ตค่าที่เลือกจากเมนู
     }
 
-    public void SetupMatch(List<Character> humanPlayers)
+    // ✅ รับ index ที่ Player เลือกแล้วหาบอทจากที่เหลือ
+    public void SetupMatch(List<Character> humanPlayers, List<int> playerSelectedIndices)
     {
-        // ล้างแค่ลิสต์ตัวละครพอ ไม่ต้องล้าง PlayerCount ที่ส่งมาจากเมนู
         SelectedPlayers.Clear();
         SelectedBots.Clear();
 
-        // 1. บันทึกรายชื่อคนเล่นตามที่เลือกมาจริง
         SelectedPlayers.AddRange(humanPlayers);
 
-        // 🚀 บรรทัดที่พี่ต้องการให้แก้: ไม่ต้องนับใหม่ ใช้ค่าเดิมที่เซ็ตมาจาก MainMenu
-        // PlayerCount = SelectedPlayers.Count; <-- ลบทิ้งไปเลย
+        int targetSlots = _characterLibrary.Count; // ✅ ใช้จำนวน library
+        int botNeeded = targetSlots - SelectedPlayers.Count;
 
-        // 2. เติมบอทจากตัวละครที่เหลือใน Library ให้ครบ (โหมดนี้เน้นให้บอทเติมเต็มช่องว่าง)
-        foreach (var mapping in _characterLibrary)
+        // ✅ Skip index ที่ player เลือก และเพิ่มตามลำดับใน library
+        for (int i = 0; i < _characterLibrary.Count && SelectedBots.Count < botNeeded; i++)
         {
+            if (playerSelectedIndices.Contains(i)) continue; // ✅ Skip index ที่ player ใช้
+
+            var mapping = _characterLibrary[i];
             Character charType = mapping.CharacterType;
-            if (!SelectedPlayers.Contains(charType))
-            {
-                SelectedBots.Add(charType);
-            }
+
+            if (charType == Character.None || charType == Character.All)
+                continue;
+
+            SelectedBots.Add(charType);
         }
 
-        Debug.Log($"<b><color=#4CAF50>[Session]</color></b> Mode: {PlayerCount} Players, Humans: {SelectedPlayers.Count}, Bots: {SelectedBots.Count}");
+        Debug.Log($"[Session] Players:{SelectedPlayers.Count} Bots:{SelectedBots.Count}");
     }
 
-    // ... ฟังก์ชัน GetCharacterPrefab และอื่นๆ คงเดิม ...
     public bool IsBot(Character type) => SelectedBots.Contains(type);
 
     public GameObject GetCharacterPrefab(Character type)
@@ -82,12 +92,17 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
         if (_cachedLibrary == null)
         {
             _cachedLibrary = new Dictionary<Character, GameObject>();
+
             foreach (var mapping in _characterLibrary)
             {
-                if (mapping.Prefab != null && !_cachedLibrary.ContainsKey(mapping.CharacterType))
+                if (mapping.Prefab != null &&
+                    !_cachedLibrary.ContainsKey(mapping.CharacterType))
+                {
                     _cachedLibrary.Add(mapping.CharacterType, mapping.Prefab);
+                }
             }
         }
+
         _cachedLibrary.TryGetValue(type, out var result);
         return result;
     }

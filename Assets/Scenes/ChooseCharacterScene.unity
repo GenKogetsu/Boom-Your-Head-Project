@@ -875,6 +875,7 @@ GameObject:
   - component: {fileID: 1960069473}
   - component: {fileID: 1960069478}
   - component: {fileID: 1960069477}
+  - component: {fileID: 1960069479}
   m_Layer: 5
   m_Name: PlayerSelectionCanvas
   m_TagString: Untagged
@@ -991,7 +992,7 @@ MonoBehaviour:
   _p2Index: 1
   _p1Ready: 0
   _p2Ready: 0
-  _enableInputDelay: 1
+  _inputDelay: 1
   _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
 --- !u!114 &1960069478
 MonoBehaviour:
@@ -1005,7 +1006,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
-  m_Actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  m_Actions: {fileID: -944628639613478452, guid: 5e438cfce4dd3384e9381fa7bdce7439, type: 3}
   m_NotificationBehavior: 2
   m_UIInputModule: {fileID: 0}
   m_DeviceLostEvent:
@@ -1018,38 +1019,6 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_ActionEvents:
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1960069477}
-        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
-        m_MethodName: OnP1Move
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 351f2ccd-1f9f-44bf-9bec-d62ac5c5f408
-    m_ActionName: 'Player/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1960069477}
-        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
-        m_MethodName: OnP2Move
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: d24cb579-768a-4869-a05f-06ded138cafe
-    m_ActionName: 'Player/P2Move[/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 934d9f77-c75a-481a-831c-aa09b26ac13d
@@ -1074,6 +1043,70 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1960069477}
         m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
+        m_MethodName: OnP1Move
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 61443f61-44ea-4b92-9909-d4dce11c34c3
+    m_ActionName: 'SinglePlayer/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1960069477}
+        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
+        m_MethodName: OnP1Move
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 3c577744-57ca-441d-9798-0da4cb7725bd
+    m_ActionName: 'Multiplayer/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1960069477}
+        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
+        m_MethodName: OnP1Confirm
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: aa8981d0-ff17-4b28-9293-9cd53bc0ffdb
+    m_ActionName: 'Multiplayer/P1Bomb[/Keyboard/leftShift]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1960069477}
+        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
+        m_MethodName: OnP2Move
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 609d6d7d-19bf-4ba4-a02e-33bb914de015
+    m_ActionName: 'Multiplayer/P2Move[/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1960069477}
+        m_TargetAssemblyTypeName: CharacterSelectionController, Assembly-CSharp
         m_MethodName: OnP2Confirm
         m_Mode: 0
         m_Arguments:
@@ -1084,13 +1117,29 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-    m_ActionId: 30f42393-09d6-4cd4-80b3-bd0ec427a663
-    m_ActionName: 'Player/P2Bomb[/Keyboard/shift]'
+    m_ActionId: 05b08f4a-74c8-4df6-986b-ed29e4c4f2c3
+    m_ActionName: 'Multiplayer/P2Bomb[/Keyboard/rightShift]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: Keyboard&Mouse
-  m_DefaultActionMap: Ui
+  m_DefaultActionMap: SinglePlayer
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &1960069479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960069472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a5735f0905767c49a99fa40f5e7045e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InputMapSwitcher
+  _inputActions: {fileID: -944628639613478452, guid: 5e438cfce4dd3384e9381fa7bdce7439, type: 3}
+  _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  _singlePlayerMapName: SinglePlayer
+  _multiplayerMapName: Multiplayer
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

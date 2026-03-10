@@ -476,34 +476,118 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_Actions
+      value: 
+      objectReference: {fileID: -944628639613478452, guid: 5e438cfce4dd3384e9381fa7bdce7439, type: 3}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_ActionEvents.Array.size
-      value: 5
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_ActionId
+      value: 934d9f77-c75a-481a-831c-aa09b26ac13d
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[1].m_ActionId
+      value: 61443f61-44ea-4b92-9909-d4dce11c34c3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[2].m_ActionId
+      value: 96612f53-93a2-4cfc-b17d-e5f6cb3a28a7
       objectReference: {fileID: 0}
     - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_ActionEvents.Array.data[3].m_ActionId
-      value: d24cb579-768a-4869-a05f-06ded138cafe
+      value: 3c577744-57ca-441d-9798-0da4cb7725bd
       objectReference: {fileID: 0}
     - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_ActionEvents.Array.data[4].m_ActionId
-      value: b258a392-0bdc-47d9-bc2b-1287ac591450
+      value: aa8981d0-ff17-4b28-9293-9cd53bc0ffdb
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[5].m_ActionId
+      value: 609d6d7d-19bf-4ba4-a02e-33bb914de015
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[6].m_ActionId
+      value: 05b08f4a-74c8-4df6-986b-ed29e4c4f2c3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_ActionName
+      value: 'Ui/PressAnyKey[/Keyboard/anyKey,/Mouse/leftButton]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[1].m_ActionName
+      value: 'SinglePlayer/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[2].m_ActionName
+      value: 'SinglePlayer/P1Bomb[/Keyboard/space]'
       objectReference: {fileID: 0}
     - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_ActionEvents.Array.data[3].m_ActionName
-      value: 'Player/P2Move[/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow]'
+      value: 'Multiplayer/P1Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
       objectReference: {fileID: 0}
     - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_ActionEvents.Array.data[4].m_ActionName
-      value: 'Player/P2PlaceBomb[/Keyboard/rightShift]'
+      value: 'Multiplayer/P1Bomb[/Keyboard/leftShift]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[5].m_ActionName
+      value: 'Multiplayer/P2Move[/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[6].m_ActionName
+      value: 'Multiplayer/P2Bomb[/Keyboard/rightShift]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[2].m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1496084761}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnPressAnyKey
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: MainMenuController, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 3221757929239273771, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 5481480158322904912, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8459053976999519708, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      propertyPath: _sessionData
+      value: 
+      objectReference: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3065097777723734793, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1496084762}
   m_SourcePrefab: {fileID: 100100000, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+--- !u!1 &586545554 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3065097777723734793, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+  m_PrefabInstance: {fileID: 586545553}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1164827986
 GameObject:
   m_ObjectHideFlags: 0
@@ -773,6 +857,33 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 13cd536d7c42896408bcbc74bf0a870f, type: 3}
+--- !u!114 &1496084761 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8459053976999519708, guid: b87526a86cc41b14ea3414cfb32f7a6b, type: 3}
+  m_PrefabInstance: {fileID: 586545553}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 586545554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b2b2342dab81904f8994084336d68cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuController
+--- !u!114 &1496084762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 586545554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a5735f0905767c49a99fa40f5e7045e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InputMapSwitcher
+  _inputActions: {fileID: -944628639613478452, guid: 5e438cfce4dd3384e9381fa7bdce7439, type: 3}
+  _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  _singlePlayerMapName: SinglePlayer
+  _multiplayerMapName: Multiplayer
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

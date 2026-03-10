@@ -31,9 +31,11 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
     private Dictionary<Character, StatsController> _controlledStatsMap = new Dictionary<Character, StatsController>();
     private Dictionary<Character, BotBrainState> _botBrains = new Dictionary<Character, BotBrainState>();
+    private Dictionary<Character, float> _unreachableTargetTimer = new Dictionary<Character, float>(); // ✅ ติดตามเวลากำลังไปหา target ที่ไม่ได้ผล
 
     private float _nextThinkTime;
     private float _nextReflexTime;
+    private const float UNREACHABLE_TIMEOUT = 2.0f; // ✅ ถ้า 2 วิแล้วยังไม่ถึง ให้ลบเป้าหมายแล้วลองใหม่
     #endregion
 
     // IPathfindable Implementation
@@ -115,6 +117,7 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
                 if (brain.SafeTarget.x != -9999) brain.CurrentFullPath = GetEscapePath(myGridPos, brain.SafeTarget);
                 brain.TargetItemPos = new Vector2Int(-9999, -9999);
+                if (!_unreachableTargetTimer.ContainsKey(botId)) _unreachableTargetTimer[botId] = 0;
             }
             else if (brain.Behavior == BotFullStateMachine.Fleeing)
             {
@@ -137,13 +140,39 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             Vector2Int myGridPos = WorldToGrid(stats.transform.position);
             int safeRadius = stats.CurrentExplosionRange + 1;
 
+            // ✅ ตรวจสอบว่า path เก่าว่างเปล่า ถ้าว่างให้ reset timer
+            if (brain.CurrentFullPath.Count == 0)
+            {
+                if (!_unreachableTargetTimer.ContainsKey(botId)) _unreachableTargetTimer[botId] = 0;
+                _unreachableTargetTimer[botId] += Time.fixedDeltaTime;
+
+                if (_unreachableTargetTimer[botId] > UNREACHABLE_TIMEOUT)
+                {
+                    brain.TargetItemPos = new Vector2Int(-9999, -9999); // ✅ ลบเป้าหมายเก่า ให้มันหาใหม่
+                    _unreachableTargetTimer[botId] = 0;
+                }
+            }
+            else
+            {
+                _unreachableTargetTimer[botId] = 0; // ✅ ถ้ามี path ให้รีเซ็ต timer
+            }
+
             // Item Hunting
             if (brain.TargetItemPos.x == -9999 || !CheckHasItemAt(brain.TargetItemPos))
                 brain.TargetItemPos = ExecuteFindNearestObject(myGridPos, _itemLayer, _itemSearchRadius);
 
             if (brain.TargetItemPos.x != -9999)
             {
-                brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetItemPos, false, safeRadius);
+                // ✅ เช็คว่า path ว่างหรือ target เปลี่ยนไปแล้ว ถึงค่อยคำนวณใหม่
+                if (brain.CurrentFullPath.Count == 0 || brain.CurrentFullPath[brain.CurrentFullPath.Count - 1] != brain.TargetItemPos)
+                {
+                    brain.CurrentFullPath = GetFullPath(myGridPos, brain.TargetItemPos, false, safeRadius);
+                }
+
+                if (brain.CurrentFullPath.Count == 0)
+                {
+                    brain.TargetItemPos = new Vector2Int(-9999, -9999); // ✅ ถ้าไม่ได้ path ให้ลบเป้า
+                }
                 continue;
             }
 
@@ -213,6 +242,7 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
         _controlledStatsMap.Clear();
         _targetsToDrive.Clear();
+        _unreachableTargetTimer.Clear(); // ✅ ล้าง timer เมื่อ refresh
 
         foreach (var botId in _sessionData.SelectedBots)
         {
