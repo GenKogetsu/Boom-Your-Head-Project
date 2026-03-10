@@ -14,6 +14,8 @@ public class SceneEffectController : Singleton<SceneEffectController>
 
     public Coroutine SceneEffectCoroutine;
 
+    public bool HaveSceneEffectCoroutine;
+
 
     private void OnValidate()
     {
@@ -53,7 +55,7 @@ public class SceneEffectController : Singleton<SceneEffectController>
 
     public IEnumerator LoadSceneAndPlayEffectRotine(string SceneName)
     {
-        if (SceneEffectCoroutine != null) yield break;
+        HaveSceneEffectCoroutine = true;
 
         if (_animator == null)
         {
@@ -75,6 +77,7 @@ public class SceneEffectController : Singleton<SceneEffectController>
 
         EventBus.Instance.Publish(new LoadSceneEvent(false));
         SceneEffectCoroutine = null;
+        HaveSceneEffectCoroutine= false;
     }
 
     public IEnumerator LoadSceneAndPlayEffectRotine(int SceneBuildIndex)

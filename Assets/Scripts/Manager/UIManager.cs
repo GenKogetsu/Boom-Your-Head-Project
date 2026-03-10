@@ -1,65 +1,63 @@
-﻿using System.Collections.Generic;
+﻿using UnityEngine;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
+using System;
 
-public class UIManager : MonoBehaviour
+namespace BombGame.UI
 {
-    [Header("Channel & Data")]
-    [SerializeField] private PlayerStatsChannelSO _statsChannel;
-    [SerializeField] private GameSessionDataSO _sessionData;
-
-    [Header("UI Slots")]
-    [SerializeField] private PlayerUiSlot Ryuwen, Edigan, Baboon, Terbi;
-
-    private void OnEnable()
+    public sealed class UIManager : MonoBehaviour
     {
-        if (_statsChannel != null)
-            _statsChannel.OnStatsUpdated += HandleStatsUpdated;
-    }
+        [Header("Ryuwen Stats Reference")]
+        [SerializeField] private StatsController _ryuwenStats;
+        [SerializeField] private GameObject _ryuwenOut;
+        [SerializeField] private TextMeshProUGUI _ryuwenHp, _ryuwenBomb, _ryuwenSpeed, _ryuwenRange;
 
-    private void OnDisable()
-    {
-        if (_statsChannel != null)
-            _statsChannel.OnStatsUpdated -= HandleStatsUpdated;
-    }
+        [Header("Edigan Stats Reference")]
+        [SerializeField] private StatsController _ediganStats;
+        [SerializeField] private GameObject _ediganOut;
+        [SerializeField] private TextMeshProUGUI _ediganHp, _ediganBomb, _ediganSpeed, _ediganRange;
 
+        [Header("Baboon Stats Reference")]
+        [SerializeField] private StatsController _baboonStats;
+        [SerializeField] private GameObject _baboonOut;
+        [SerializeField] private TextMeshProUGUI _baboonHp, _baboonBomb, _baboonSpeed, _baboonRange;
 
+        [Header("Terbi Stats Reference")]
+        [SerializeField] private StatsController _terbiStats;
+        [SerializeField] private GameObject _terbiOut;
+        [SerializeField] private TextMeshProUGUI _terbiHp, _terbiBomb, _terbiSpeed, _terbiRange;
 
-    private void HandleStatsUpdated(StatsChangeEvent OnStatsChange)
-    {
-        switch (OnStatsChange.CharacterName)
+        private void Update()
         {
-            case Character.Ryuwen:
-                UpdateCharacterUI(Ryuwen, OnStatsChange);
-                break;
-
-            case Character.Edigan:
-                UpdateCharacterUI(Edigan, OnStatsChange);
-                break;
-
-            case Character.Baboon:
-                UpdateCharacterUI(Baboon, OnStatsChange);
-                break;
-
-            case Character.Terbi:
-                UpdateCharacterUI(Terbi, OnStatsChange);
-                break;
+            // อัปเดตข้อมูลสดๆ ของทุกคนทุกเฟรม
+            UpdatePlayerUI(_ryuwenStats, _ryuwenOut, _ryuwenHp, _ryuwenBomb, _ryuwenSpeed, _ryuwenRange);
+            UpdatePlayerUI(_ediganStats, _ediganOut, _ediganHp, _ediganBomb, _ediganSpeed, _ediganRange);
+            UpdatePlayerUI(_baboonStats, _baboonOut, _baboonHp, _baboonBomb, _baboonSpeed, _baboonRange);
+            UpdatePlayerUI(_terbiStats, _terbiOut, _terbiHp, _terbiBomb, _terbiSpeed, _terbiRange);
         }
-    }
 
-    private void UpdateCharacterUI(PlayerUiSlot slot, StatsChangeEvent data)
-    {
-        if (slot == null) return;
-
-        slot.HpDisplay.text = data.Hp.ToString();
-        slot.BombDisplay.text = data.BombAmount.ToString();
-        slot.SpeedDisplay.text = data.Speed.ToString("F0");
-        slot.RangeDisplay.text = data.Range.ToString();
-
-        if (data.Hp <= 0)
+        private void UpdatePlayerUI(StatsController stats, GameObject outImg, TextMeshProUGUI hp, TextMeshProUGUI bomb, TextMeshProUGUI speed, TextMeshProUGUI range)
         {
-            slot.OutImage.gameObject.SetActive(true);
+            // 🛡️ ถ้าไม่ได้ลาก Stats ของตัวละครนั้นมา (เช่น เล่นไม่ครบคน) ให้ข้ามไป
+            if (stats == null) return;
+
+            // 1. อัปเดตตัวเลขล่าสุดจาก StatsController
+            if (hp) hp.text = stats.CurrentHp.ToString();
+            if (bomb) bomb.text = stats.CurrentBombAmount.ToString();
+
+            // ปัดเศษทศนิยมความเร็ว
+            int speedVal = (int)Mathf.Floor(stats.CurrentSpeed);
+            if (speed) speed.text = speedVal.ToString();
+
+            if (range) range.text = stats.CurrentExplosionRange.ToString();
+
+            // 2. เช็คเลือดเพื่อเปิดป้าย OUT
+            if (outImg)
+            {
+                bool isDead = stats.CurrentHp <= 0;
+                // ป้องกันการ SetActive ซ้ำทุกเฟรมเพื่อประหยัดสเปค
+                if (outImg.activeSelf != isDead) outImg.SetActive(isDead);
+            }
         }
     }
 }

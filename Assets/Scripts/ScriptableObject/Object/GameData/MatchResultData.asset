@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae2627a53c0f4904db83b50e85f2b1aa, type: 3}
+  m_Name: MatchResultData
+  m_EditorClassIdentifier: Assembly-CSharp::MatchResultSO
+  FinalRankNames:
+  - Terbi
+  - Baboon
+  - Ryuwen
+  - Edigan

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Terbi
   m_EditorClassIdentifier: Assembly-CSharp::LivingThingsScriptable
   livingName: 4
-  baseHp: 3
+  baseHp: 1
   baseAtk: 1
   baseSpeed: 5
   baseBombAmount: 1

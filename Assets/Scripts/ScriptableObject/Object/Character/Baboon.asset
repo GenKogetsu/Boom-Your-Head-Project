@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1af581ec0b9355246838052a5e0a092f, type: 3}
   m_Name: Baboon
   m_EditorClassIdentifier: Assembly-CSharp::LivingThingsScriptable
-  livingName: 2
-  baseHp: 3
+  livingName: 3
+  baseHp: 1
   baseAtk: 1
   baseSpeed: 5
   baseBombAmount: 1

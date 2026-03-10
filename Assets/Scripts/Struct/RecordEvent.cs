@@ -59,3 +59,13 @@ public record struct CharacterDeathEvent(GameObject Victim, Character Character)
 public record struct TileChangedEvent(Vector2Int GridPos, TileType NewType) : IEvent;
 
 public record struct LoadSceneEvent (bool Isloding) : IEvent;
+
+public struct StatsChangeEvent
+{
+    public Character CharacterType;
+    public int Hp;
+    public int BombAmount;
+    public float Speed;
+    public int ExplosionRange;
+    public bool IsDead;
+}

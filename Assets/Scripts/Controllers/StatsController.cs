@@ -26,6 +26,9 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
     [SerializeField] private float _flashSpeed = 15f;
     [SerializeField] private GameObject _hitEffectPrefab;
 
+    [Header("UI Observer Channel")]
+    [SerializeField] private PlayerStatsChannelSO _statsChannel; // 🚀 ท่อส่งสัญญาณไปที่ UI List
+
     [Header("Runtime Stats")]
     [ReadOnly][SerializeField] private bool _isInvincible;
     [ReadOnly][SerializeField] private int _currentHp;
@@ -64,14 +67,40 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
             _currentHp = Mathf.Max(0, value);
             OnHpChanged();
             if (_currentHp <= 0) OnDeath();
+            BroadcastStatsUpdate(); // 🚀 ส่งสัญญาณเมื่อเลือดเปลี่ยน
         }
     }
 
-    public float CurrentSpeed { get => _currentSpeed; set => _currentSpeed = Mathf.Max(0, value); }
-    public int CurrentBombAmount { get => _currentBombAmount; set => _currentBombAmount = Mathf.Max(0, value); }
-    public int CurrentExplosionRange { get => _currentExplosionRange; set => _currentExplosionRange = Mathf.Max(0, value); }
-    public int CurrentAtk { get => _currentAtk; set => _currentAtk = Mathf.Max(0, value); }
-    public int BombsRemaining { get => _bombsRemaining; set => _bombsRemaining = Mathf.Clamp(value, 0, _currentBombAmount); }
+    // 🚀 เพิ่มการส่งสัญญาณเมื่อค่าสถานะอื่นเปลี่ยน เพื่อให้ UI อัปเดตทันที
+    public float CurrentSpeed
+    {
+        get => _currentSpeed;
+        set { _currentSpeed = Mathf.Max(0, value); BroadcastStatsUpdate(); }
+    }
+
+    public int CurrentBombAmount
+    {
+        get => _currentBombAmount;
+        set { _currentBombAmount = Mathf.Max(0, value); BroadcastStatsUpdate(); }
+    }
+
+    public int CurrentExplosionRange
+    {
+        get => _currentExplosionRange;
+        set { _currentExplosionRange = Mathf.Max(0, value); BroadcastStatsUpdate(); }
+    }
+
+    public int CurrentAtk
+    {
+        get => _currentAtk;
+        set { _currentAtk = Mathf.Max(0, value); }
+    }
+
+    public int BombsRemaining
+    {
+        get => _bombsRemaining;
+        set => _bombsRemaining = Mathf.Clamp(value, 0, _currentBombAmount);
+    }
 
     #endregion //Properties
 
@@ -94,10 +123,6 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
     #region Public Methods
 
-    /// <summary>
-    /// <para> (TH) : ดึงข้อมูลตั้งต้นจาก ScriptableObject กลับมาทับค่า Runtime ปัจจุบัน </para>
-    /// <para> (EN) : Syncs current runtime stats with initial values from the ScriptableObject. </para>
-    /// </summary>
     public void SyncData()
     {
         if (_statsData == null) return;
@@ -108,18 +133,15 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
         _currentBombAmount = _statsData.baseBombAmount;
         _currentExplosionRange = _statsData.baseExplosionRange;
         _bombsRemaining = _currentBombAmount;
+
+        BroadcastStatsUpdate(); // 🚀 ส่งข้อมูลเริ่มต้น
     }
 
-    /// <summary>
-    /// <para> (TH) : รีเซ็ตค่าสถานะและเปิดการทำงานของ Component กลับเป็นค่าเริ่มต้น (ใช้ตอน Spawn ใหม่) </para>
-    /// <para> (EN) : Resets stats and re-enables components to default state (Used on Respawn). </para>
-    /// </summary>
     public void ResetStats()
     {
         SyncData();
         IsInvincible = false;
 
-        // คืนค่าการแสดงผล
         if (_characterSprite != null)
         {
             Color c = _characterSprite.color;
@@ -127,7 +149,6 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
             _characterSprite.color = c;
         }
 
-        // เปิด Physics
         if (_characterRigidbody != null)
         {
             _characterRigidbody.simulated = true;
@@ -136,16 +157,15 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
         if (_characterCollider != null) _characterCollider.enabled = true;
 
-        // เปิด Logic และ Animator
         this.enabled = true;
         if (_characterAnimator != null)
         {
             _characterAnimator.enabled = true;
             _characterAnimator.SetInteger("Hp", _currentHp);
-            _characterAnimator.Play("Idle"); // กลับไปท่าเริ่มต้น
+            _characterAnimator.Play("Idle");
         }
 
-        Debug.Log($"<b><color=#4FC3F7>[Stats Reset]</color></b> {name} has been restored to initial state.");
+        Debug.Log($"<b><color=#4FC3F7>[Stats Reset]</color></b> {name} restored.");
     }
 
     public void OnHitItem(string itemTag)
@@ -162,6 +182,24 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
     #endregion //Public Methods
 
     #region Private Logic
+
+    // 🚀 ฟังก์ชันส่งข้อมูลเข้าท่อส่งสัญญาณ (Signal)
+    private void BroadcastStatsUpdate()
+    {
+        if (_statsChannel == null || _livingName == Character.None) return;
+
+        // มัดรวมข้อมูลใส่ Struct (ต้องตั้งชื่อตัวแปรให้ตรงกับใน StatsChangeEvent)
+        StatsChangeEvent payload = new StatsChangeEvent
+        {
+            CharacterType = _livingName,
+            Hp = _currentHp,
+            BombAmount = _currentBombAmount,
+            Speed = _currentSpeed,
+            ExplosionRange = _currentExplosionRange
+        };
+
+        _statsChannel.RaiseEvent(payload);
+    }
 
     private void ExecuteTakeDamage(int amount)
     {
@@ -191,7 +229,6 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
     private void OnDeath()
     {
-        // ปิด Physics และการควบคุม แต่ไม่ Destroy เพื่อให้ Registry ยังอ้างอิงถึงได้
         if (_characterRigidbody != null)
         {
             _characterRigidbody.simulated = false;
@@ -200,13 +237,12 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
 
         if (_characterCollider != null) _characterCollider.enabled = false;
 
-        // ส่ง Event แจ้งว่าตายแล้ว
         EventBus.Instance.Publish(new CharacterDeathEvent(this.gameObject, _statsData.livingName));
 
-        // ปิดสคริปต์ตัวเองเพื่อหยุด Logic การทำงาน
         this.enabled = false;
 
-        Debug.Log($"<b><color=#FF5252>[Death]</color></b> {name} is dead. Logic disabled for pooling/registry.");
+        BroadcastStatsUpdate(); // 🚀 ส่งสัญญาณครั้งสุดท้ายเมื่อตาย (เพื่อเซ็ตป้าย OUT)
+        Debug.Log($"<b><color=#FF5252>[Death]</color></b> {name} disabled.");
     }
 
     #endregion //Private Logic

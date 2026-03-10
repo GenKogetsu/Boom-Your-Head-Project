@@ -991,7 +991,8 @@ MonoBehaviour:
   _p2Index: 1
   _p1Ready: 0
   _p2Ready: 0
-  _gameSessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
+  _enableInputDelay: 1
+  _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
 --- !u!114 &1960069478
 MonoBehaviour:
   m_ObjectHideFlags: 0

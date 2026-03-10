@@ -145,4 +145,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InputManager
   _botInputChannel: {fileID: 11400000, guid: b50f40cb9c912304784f062da5e390d1, type: 2}
   _sessionData: {fileID: 11400000, guid: bf78820d6bce32b479e86553296a7af5, type: 2}
-  playerInput: {fileID: 5480118823380935668}
+  _inputActions: {fileID: -944628639613478452, guid: 5e438cfce4dd3384e9381fa7bdce7439, type: 3}
+  _singlePlayerMapName: SinglePlayer
+  _multiplayerMapName: Multiplayer

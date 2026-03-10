@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "GameSessionData", menuName = "BombGame/Data/GameSession")]
-public class GameSessionDataSO : ScriptableObject , IAmScriptableObject
+public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
 {
+    // ... CharacterMapping และ _characterLibrary คงเดิม ...
     [Serializable]
     public struct CharacterMapping
     {
@@ -16,7 +17,7 @@ public class GameSessionDataSO : ScriptableObject , IAmScriptableObject
     [SerializeField] private List<CharacterMapping> _characterLibrary = new List<CharacterMapping>();
 
     [Header("Match Setup")]
-    public int PlayerCount = 1;
+    public int PlayerCount = 0; // 🚀 ตัวนี้จะถูก MainMenu เป็นคนสั่ง
     public List<Character> SelectedPlayers = new List<Character>();
     public List<Character> SelectedBots = new List<Character>();
 
@@ -39,40 +40,41 @@ public class GameSessionDataSO : ScriptableObject , IAmScriptableObject
 
     private void OnEnable() => _cachedLibrary = null;
 
-    public void ResetSession()
+    public void ResetScripts()
     {
         CurrentStageIndex = 0;
+        PlayerCount = 0;
         SelectedPlayers.Clear();
         SelectedBots.Clear();
-        PlayerCount = 1;
+        // 🚀 เอา PlayerCount = 1; ออกจากตรงนี้ เพื่อไม่ให้มันรีเซ็ตค่าที่เลือกจากเมนู
     }
 
-    // 🚀 [NEW] ฟังก์ชันบันทึกข้อมูลและเติมบอทอัตโนมัติ
     public void SetupMatch(List<Character> humanPlayers)
     {
-        ResetSession();
+        // ล้างแค่ลิสต์ตัวละครพอ ไม่ต้องล้าง PlayerCount ที่ส่งมาจากเมนู
+        SelectedPlayers.Clear();
+        SelectedBots.Clear();
 
-        // 1. บันทึกรายชื่อคนเล่น
+        // 1. บันทึกรายชื่อคนเล่นตามที่เลือกมาจริง
         SelectedPlayers.AddRange(humanPlayers);
-        PlayerCount = SelectedPlayers.Count;
 
-        // 2. เติมบอทจากตัวละครที่เหลือใน Library (อัตโนมัติ)
-        // วนลูปตาม Character ทั้งหมดที่มีใน Enum (หรือตามที่ลิสต์ไว้ใน Library)
+        // 🚀 บรรทัดที่พี่ต้องการให้แก้: ไม่ต้องนับใหม่ ใช้ค่าเดิมที่เซ็ตมาจาก MainMenu
+        // PlayerCount = SelectedPlayers.Count; <-- ลบทิ้งไปเลย
+
+        // 2. เติมบอทจากตัวละครที่เหลือใน Library ให้ครบ (โหมดนี้เน้นให้บอทเติมเต็มช่องว่าง)
         foreach (var mapping in _characterLibrary)
         {
             Character charType = mapping.CharacterType;
-
-            // ถ้าตัวละครนี้ไม่มีคนเลือก ให้เอาไปใส่ในลิสต์บอท
             if (!SelectedPlayers.Contains(charType))
             {
                 SelectedBots.Add(charType);
             }
         }
 
-        Debug.Log($"<b><color=#4CAF50>[Session]</color></b> Match Setup Complete: " +
-                  $"{SelectedPlayers.Count} Players, {SelectedBots.Count} Bots.");
+        Debug.Log($"<b><color=#4CAF50>[Session]</color></b> Mode: {PlayerCount} Players, Humans: {SelectedPlayers.Count}, Bots: {SelectedBots.Count}");
     }
 
+    // ... ฟังก์ชัน GetCharacterPrefab และอื่นๆ คงเดิม ...
     public bool IsBot(Character type) => SelectedBots.Contains(type);
 
     public GameObject GetCharacterPrefab(Character type)
@@ -88,12 +90,5 @@ public class GameSessionDataSO : ScriptableObject , IAmScriptableObject
         }
         _cachedLibrary.TryGetValue(type, out var result);
         return result;
-    }
-
-    public void ResetScripts()
-    {
-        SelectedBots.Clear();
-        SelectedPlayers.Clear();
-        AllMatchParticipants.Clear();
     }
 }

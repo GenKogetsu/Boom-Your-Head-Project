@@ -15,10 +15,6 @@ public class CarMovementController : MonoBehaviour
     [SerializeField] private float _baseMoveSpeed = 5f;
     [SerializeField] private float _stoppingDistance = 0.15f;
 
-    [Header("Combat Settings")]
-    [SerializeField] private int _damageValue = 1;      // 🚀 พลังโจมตี
-    [SerializeField] private float _attackCooldown = 1f; // ระยะห่างการโดนดาเมจซ้ำ (วินาที)
-    private float _nextAttackTime;
 
     [Header("Pacing Randomizer")]
     [ReadOnly][SerializeField] private SpeedState _currentState;

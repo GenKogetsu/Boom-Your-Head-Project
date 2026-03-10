@@ -3,112 +3,124 @@ using UnityEngine.InputSystem;
 using Genoverrei.DesignPattern;
 using NaughtyAttributes;
 
-/// <summary>
-/// <para> (TH) : ศูนย์กลางรวบรวมคำสั่งทั้งหมด (ผู้เล่นและบอท) เพื่อกระจาย CharacterAction เข้าสู่ EventBus </para>
-/// <para> (EN) : Central hub aggregating all commands (player and bot) to broadcast CharacterAction to EventBus. </para>
-/// </summary>
-public sealed class InputManager : MonoBehaviour , IPauseWhenSceneAnimation
+public sealed class InputManager : MonoBehaviour, IPauseWhenSceneAnimation
 {
-    #region Variable
+    #region Variables
 
     [Header("Bot Communication")]
     [SerializeField] private BotInputChannelSO _botInputChannel;
 
     [Header("Session Reference")]
-    [Required]
-    [SerializeField] private GameSessionDataSO _sessionData;
+    [Required][SerializeField] private GameSessionDataSO _sessionData;
 
-    [SerializeField] private PlayerInput playerInput;
+    [Header("Input Action Asset")]
+    [SerializeField] private InputActionAsset _inputActions;
 
-    #endregion //Variable
+    [Header("Map Names")]
+    [SerializeField] private string _singlePlayerMapName = "SinglePlayer";
+    [SerializeField] private string _multiplayerMapName = "Multiplayer";
 
-    #region Unity Lifecycle
+    private InputActionMap _singlePlayerMap;
+    private InputActionMap _multiplayerMap;
+
+    #endregion
+
+    private void Awake()
+    {
+        if (_inputActions == null)
+        {
+            Debug.LogError("InputActionAsset ไม่ได้ถูกตั้งค่าใน Inspector");
+            return;
+        }
+
+        _singlePlayerMap = _inputActions.FindActionMap(_singlePlayerMapName, true);
+        _multiplayerMap = _inputActions.FindActionMap(_multiplayerMapName, true);
+
+        ApplyInputPreset();
+    }
+
+    private void ApplyInputPreset()
+    {
+        if (_sessionData == null) return;
+
+        bool isSingle = _sessionData.PlayerCount == 1;
+
+        if (isSingle)
+        {
+            _multiplayerMap?.Disable();
+            _singlePlayerMap?.Enable();
+        }
+        else
+        {
+            _singlePlayerMap?.Disable();
+            _multiplayerMap?.Enable();
+        }
+
+        Debug.Log($"<color=#4FC3F7>[InputManager]</color> Active Map : {(isSingle ? "SinglePlayer" : "Multiplayer")}");
+    }
+
+    #region Event & Lifecycle
 
     private void OnEnable()
     {
-        // 🤖 ดักฟังคำสั่งจากฝั่งบอท (สำหรับโหมดเล่นกับ AI)
         if (_botInputChannel != null)
-        {
             _botInputChannel.OnBotActionTriggered += ExecuteHandleBotInput;
-        }
 
-        if (EventBus.Instance != null) EventBus.Instance.Subscribe<LoadSceneEvent>(WhenAnimationPlayed);
-
-    }
-
-    public void WhenAnimationPlayed(LoadSceneEvent loadSceneEvent)
-    {
-        playerInput.enabled = !loadSceneEvent.Isloding;
+        if (EventBus.Instance != null)
+            EventBus.Instance.Subscribe<LoadSceneEvent>(WhenAnimationPlayed);
     }
 
     private void OnDisable()
     {
         if (_botInputChannel != null)
-        {
             _botInputChannel.OnBotActionTriggered -= ExecuteHandleBotInput;
-        }
 
-        if (EventBus.Instance != null) EventBus.Instance.Unsubscribe<LoadSceneEvent>(WhenAnimationPlayed);
+        if (EventBus.Instance != null)
+            EventBus.Instance.Unsubscribe<LoadSceneEvent>(WhenAnimationPlayed);
 
+        _singlePlayerMap?.Disable();
+        _multiplayerMap?.Disable();
     }
 
-    #endregion //Unity Lifecycle
+    #endregion
 
-    #region Public Methods (For Player Input System)
-
-    // ------------------ PLAYER 1 ------------------
+    #region Input Callbacks
 
     public void OnMoveP1(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        BroadcastAction(GetCharacterFromSession(0), ActionType.Move, new MoveInputEvent(input));
-    }
+        => BroadcastAction(GetCharacterFromSession(0), ActionType.Move, new MoveInputEvent(context.ReadValue<Vector2>()));
 
     public void OnPlaceBombP1(InputAction.CallbackContext context)
     {
         if (context.performed)
-        {
             BroadcastAction(GetCharacterFromSession(0), ActionType.PlaceBomb, null);
-        }
     }
-
-    // ------------------ PLAYER 2 ------------------
 
     public void OnMoveP2(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        BroadcastAction(GetCharacterFromSession(1), ActionType.Move, new MoveInputEvent(input));
-    }
+        => BroadcastAction(GetCharacterFromSession(1), ActionType.Move, new MoveInputEvent(context.ReadValue<Vector2>()));
 
     public void OnPlaceBombP2(InputAction.CallbackContext context)
     {
         if (context.performed)
-        {
             BroadcastAction(GetCharacterFromSession(1), ActionType.PlaceBomb, null);
-        }
     }
 
-    #endregion // Public Methods
+    #endregion
 
     #region Private Logic
 
-    /// <summary>
-    /// <para> (TH) : ดึง Character Enum จาก SelectedPlayers ใน Session Data </para>
-    /// </summary>
     private Character GetCharacterFromSession(int index)
     {
-        // 🚀 เปลี่ยนจาก SelectedCharacters มาเป็น SelectedPlayers
-        if (_sessionData == null || _sessionData.SelectedPlayers == null) return Character.None;
+        if (_sessionData == null || _sessionData.SelectedPlayers == null)
+            return Character.None;
 
-        if (index >= _sessionData.SelectedPlayers.Count) return Character.None;
+        if (index >= _sessionData.SelectedPlayers.Count)
+            return Character.None;
 
         return _sessionData.SelectedPlayers[index];
     }
 
     private void ExecuteHandleBotInput(Character target, ActionType action, IEvent subEvent)
-    {
-        BroadcastAction(target, action, subEvent);
-    }
+        => BroadcastAction(target, action, subEvent);
 
     private void BroadcastAction(Character target, ActionType actionType, IEvent subEvent)
     {
@@ -117,21 +129,21 @@ public sealed class InputManager : MonoBehaviour , IPauseWhenSceneAnimation
         var signal = new CharacterAction(target, actionType, subEvent);
 
         if (EventBus.Instance != null)
-        {
             EventBus.Instance.Publish<ISignal>(signal);
-        }
-
-#if UNITY_EDITOR
-        LogAction(signal);
-#endif
     }
 
-    private void LogAction(CharacterAction action)
+    public void WhenAnimationPlayed(LoadSceneEvent loadSceneEvent)
     {
-        if (action.Event is MoveInputEvent moveData && moveData.Direction == Vector2.zero) return;
-
-        Debug.Log($"<b><color=#4FC3F7>[Input Signal]</color></b> Action: <color=#FFEB3B>{action.Action}</color> | Target: <color=#69F0AE>{action.SignalTarget}</color>");
+        if (loadSceneEvent.Isloding)
+        {
+            _singlePlayerMap?.Disable();
+            _multiplayerMap?.Disable();
+        }
+        else
+        {
+            ApplyInputPreset();
+        }
     }
 
-    #endregion // Private Logic
+    #endregion
 }

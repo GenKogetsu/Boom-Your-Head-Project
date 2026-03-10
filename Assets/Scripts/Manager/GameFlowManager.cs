@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using Genoverrei.DesignPattern;
-using Genoverrei.Manager; // 🚀 เพิ่มเพื่อเรียกหา PlayerManager
 
 /// <summary>
 /// <para> (TH) : ตัวจัดการลำดับการเล่นของเกม การเปลี่ยนฉาก และการล้างข้อมูลข้ามด่าน </para>
@@ -44,7 +43,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
     public void BackToMainMenu()
     {
-        if (_sessionData != null) _sessionData.ResetSession();
+        if (_sessionData != null) _sessionData.ResetScripts();
         SceneManager.LoadScene("MainMenu");
     }
 
