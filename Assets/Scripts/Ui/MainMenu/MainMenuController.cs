@@ -53,7 +53,7 @@ public class MainMenuController : MonoBehaviour
         if (_isStarting) return;
         _isStarting = true;
         ResetAllBools();
-        SceneEffectController.Instance.LoadSceneAndPlayEffect("ChooseCharacterScene");
+        SceneEffectController.Instance.LoadSceneAndPlayEffect("Tip");
     }
 
     private void ChangedState(string state)

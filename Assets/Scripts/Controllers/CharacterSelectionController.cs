@@ -14,7 +14,7 @@ public sealed class CharacterSelectionController : MonoBehaviour
     [SerializeField] private Image _p1Pointer;
     [SerializeField] private Image _p2Pointer;
     [SerializeField] private Vector3 _p1Offset;
-    [SerializeField] private Vector3 _p2Offset;
+    [SerializeField] private Vector3 _p2Offset; 
 
     [Header("Current States")]
     [ReadOnly][SerializeField] private int _p1Index = 0;
@@ -33,11 +33,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
 
     private bool IsSinglePlayer => _sessionData != null && _sessionData.PlayerCount == 1;
 
-    private Character GetCharacterFromIndex(int index)
-    {
-        return (Character)(index + 1);
-    }
-
     private void Start()
     {
         if (_sessionData == null)
@@ -52,6 +47,13 @@ public sealed class CharacterSelectionController : MonoBehaviour
 
     private void SetupPointers()
     {
+        // ✅ ตั้งค่า PlayerCount ถ้าไม่มีค่า
+        if (_sessionData.PlayerCount == 0)
+        {
+            Debug.LogWarning("PlayerCount not set! Checking from InputMapSwitcher or defaulting...");
+            _sessionData.PlayerCount = 1; // ✅ Default เป็น Single Player
+        }
+
         if (_p1Pointer != null)
             _p1Pointer.gameObject.SetActive(true);
 
@@ -60,8 +62,11 @@ public sealed class CharacterSelectionController : MonoBehaviour
 
         if (IsSinglePlayer)
         {
-            _p2Ready = true;
-            _p2Index = -1;
+            _p2Ready = true; // ✅ P2 Ready ในโหมด Single Player
+        }
+        else
+        {
+            _p2Ready = false; // ✅ ต้องเลือก P2 ในโหมด 2 Player
         }
 
         RefreshVisuals(1);
@@ -77,7 +82,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
         _canControl = true;
     }
 
-    // ✅ รวม P1 และ P2 Move เป็นเมธอด Generic
     public void OnP1Move(InputAction.CallbackContext context)
     {
         if (!_canControl || !context.performed || _p1Ready) return;
@@ -90,7 +94,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
         ProcessMove(ref _p2Index, context.ReadValue<Vector2>(), 2);
     }
 
-    // ✅ รวม P1 และ P2 Confirm เป็นเมธอด Generic
     public void OnP1Confirm(InputAction.CallbackContext context)
     {
         if (!_canControl || !context.performed || _p1Ready) return;
@@ -111,7 +114,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
         ConfirmSelection(2);
     }
 
-    // ✅ รวม P1 และ P2 Cancel เป็นเมธอด Generic
     public void OnP1Cancel(InputAction.CallbackContext context)
     {
         if (!_canControl || !context.performed) return;
@@ -147,7 +149,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
         RefreshVisuals(playerNum);
     }
 
-    // ✅ Generic ConfirmSelection
     private void ConfirmSelection(int playerNum)
     {
         if (playerNum == 1)
@@ -164,7 +165,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
         CheckStartGame();
     }
 
-    // ✅ Generic CancelSelection
     private void CancelSelection(int playerNum)
     {
         if (playerNum == 1 && _p1Ready)
@@ -207,11 +207,15 @@ public sealed class CharacterSelectionController : MonoBehaviour
 
     private void CheckStartGame()
     {
-        if (!_p1Ready || !_p2Ready) return;
+        // ✅ ตรวจสอบ Single Player และ Multiplayer อย่างถูกต้อง
+        bool isReady = IsSinglePlayer ? _p1Ready : (_p1Ready && _p2Ready);
+
+        if (!isReady) return;
 
         List<Character> selected = new List<Character>();
-        List<int> selectedIndices = new List<int>(); // ✅ เก็บ index
+        List<int> selectedIndices = new List<int>();
 
+        // ✅ ใช้ library index จริง ๆ
         selected.Add(_sessionData.GetCharacterFromLibraryIndex(_p1Index));
         selectedIndices.Add(_p1Index);
 
@@ -221,7 +225,6 @@ public sealed class CharacterSelectionController : MonoBehaviour
             selectedIndices.Add(_p2Index);
         }
 
-        // ✅ ส่ง index ไปด้วย
         _sessionData.SetupMatch(selected, selectedIndices);
 
         if (SceneEffectController.Instance != null)

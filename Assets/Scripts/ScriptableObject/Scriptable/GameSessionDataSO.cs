@@ -37,10 +37,30 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
 
     public string ScriptName => name;
 
+    // ✅ ดึงจาก Prefab name แทน CharacterType เพื่อให้ตรงกับตัวจริง
     public Character GetCharacterFromLibraryIndex(int index)
     {
         if (index >= 0 && index < _characterLibrary.Count)
-            return _characterLibrary[index].CharacterType;
+        {
+            var prefab = _characterLibrary[index].Prefab;
+            if (prefab != null)
+            {
+                string prefabName = prefab.name;
+
+                if (System.Enum.TryParse<Character>(prefabName, out var character))
+                {
+                    return character;
+                }
+                else
+                {
+                    Debug.LogWarning($"[GameSessionData] Prefab '{prefabName}' ไม่ตรงกับชื่อ Enum Character");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[GameSessionData] Element {index} ไม่มี Prefab ที่กำหนด");
+            }
+        }
         return Character.None;
     }
 
@@ -57,7 +77,6 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
         SelectedBots.Clear();
     }
 
-    // ✅ รับ index ที่ Player เลือกแล้วหาบอทจากที่เหลือ
     public void SetupMatch(List<Character> humanPlayers, List<int> playerSelectedIndices)
     {
         SelectedPlayers.Clear();
@@ -65,16 +84,15 @@ public class GameSessionDataSO : ScriptableObject, IAmScriptableObject
 
         SelectedPlayers.AddRange(humanPlayers);
 
-        int targetSlots = _characterLibrary.Count; // ✅ ใช้จำนวน library
+        int targetSlots = _characterLibrary.Count;
         int botNeeded = targetSlots - SelectedPlayers.Count;
 
-        // ✅ Skip index ที่ player เลือก และเพิ่มตามลำดับใน library
         for (int i = 0; i < _characterLibrary.Count && SelectedBots.Count < botNeeded; i++)
         {
-            if (playerSelectedIndices.Contains(i)) continue; // ✅ Skip index ที่ player ใช้
+            if (playerSelectedIndices.Contains(i)) continue;
 
-            var mapping = _characterLibrary[i];
-            Character charType = mapping.CharacterType;
+            // ✅ ใช้ GetCharacterFromLibraryIndex เหมือน GetCharacterFromIndex
+            Character charType = GetCharacterFromLibraryIndex(i);
 
             if (charType == Character.None || charType == Character.All)
                 continue;

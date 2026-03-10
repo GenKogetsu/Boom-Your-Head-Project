@@ -43,7 +43,7 @@ namespace BombGame.UI
 
             // 1. อัปเดตตัวเลขล่าสุดจาก StatsController
             if (hp) hp.text = stats.CurrentHp.ToString();
-            if (bomb) bomb.text = stats.CurrentBombAmount.ToString();
+            if (bomb) bomb.text = stats.BombsRemaining.ToString();
 
             // ปัดเศษทศนิยมความเร็ว
             int speedVal = (int)Mathf.Floor(stats.CurrentSpeed);

@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/MainMenu.unity
     guid: 2bf814415b53a5c43a62a0b28042a184
   - enabled: 1
+    path: Assets/Scenes/Tip.unity
+    guid: 4fd9eb9feeafd7e48b2878b3e7fab509
+  - enabled: 1
     path: Assets/Scenes/ChooseCharacterScene.unity
     guid: 99985e9366f215545aa539695825df39
   - enabled: 1
@@ -18,8 +21,11 @@ EditorBuildSettings:
     path: Assets/Scenes/Level 2.unity
     guid: dff9211aa7fd92d489e7c87baebb1cdf
   - enabled: 1
-    path: Assets/Scenes/ResultScene.unity
+    path: Assets/Scenes/ResultScene 1.unity
     guid: 8d6b407806876f94e98e3dbc7563ccf9
+  - enabled: 1
+    path: Assets/Scenes/ResultScene 2.unity
+    guid: 83030619619527147851a63ff041facc
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

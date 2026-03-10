@@ -9,7 +9,6 @@ public class MultiSceneTimerLoader : MonoBehaviour
 
     [Header("Scene Sequence")]
     [SerializeField] private string _firstScene = "SceneA";
-    [SerializeField] private string _secondScene = "SceneB";
 
     // 🚀 ใช้ static เพื่อให้ค่าคงอยู่แม้จะเปลี่ยน Scene ไปแล้ว
     private static int _loadCount = 0;
@@ -21,30 +20,14 @@ public class MultiSceneTimerLoader : MonoBehaviour
 
     private void LoadNextScene()
     {
-        string targetScene = "";
-
-        // เช็คว่าครั้งที่เท่าไหร่
-        if (_loadCount == 0)
-        {
-            targetScene = _firstScene;
-            _loadCount = 1; // เปลี่ยนเป็น 1 สำหรับครั้งหน้า
-        }
-        else
-        {
-            targetScene = _secondScene;
-            // _loadCount = 0; // ถ้าอยากให้มันวนลูปกลับไปที่ 1 ใหม่ ให้ปลดคอมเมนต์บรรทัดนี้
-        }
-
-        Debug.Log($"<b>[TimerLoader]</b> Loading {targetScene} (Attempt: {_loadCount})");
-
         // โหลดฉาก
         if (SceneEffectController.Instance != null)
         {
-            SceneEffectController.Instance.LoadSceneAndPlayEffect(targetScene);
+            SceneEffectController.Instance.LoadSceneAndPlayEffect(_firstScene);
         }
         else
         {
-            SceneManager.LoadScene(targetScene);
+            SceneManager.LoadScene(_firstScene);
         }
     }
 

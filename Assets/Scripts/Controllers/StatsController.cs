@@ -36,7 +36,7 @@ public sealed class StatsController : MonoBehaviour, ITakeDamageable
     [ReadOnly][SerializeField] private float _currentSpeed;
     [ReadOnly][SerializeField] private int _currentBombAmount;
     [ReadOnly][SerializeField] private int _currentExplosionRange;
-    [ReadOnly][SerializeField] private int _bombsRemaining;
+    [ReadOnly][SerializeField] public int _bombsRemaining;
 
     #endregion //Variable
 

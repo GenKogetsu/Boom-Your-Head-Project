@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Ryuwen
   m_EditorClassIdentifier: Assembly-CSharp::LivingThingsScriptable
   livingName: 1
-  baseHp: 1
+  baseHp: 3
   baseAtk: 1
   baseSpeed: 5
   baseBombAmount: 1
