@@ -10,7 +10,7 @@ namespace Genoverrei.DesignPattern
         public Func<Vector2Int, bool> OnCheckDangerous;
         public Func<Vector2Int, bool> OnCheckSolid;
         public Func<Vector2Int, bool> OnCheckDestructible;
-        public Func<Vector2Int, bool> OnCheckHasBomb; // 🚀 ฟีเจอร์มองเห็นระเบิด
+        public Func<Vector2Int, bool> OnCheckHasBomb;
 
         public Action<Vector3Int, Collider2D> OnRequestDestruction;
         public Action<Vector2Int> OnAddDanger;

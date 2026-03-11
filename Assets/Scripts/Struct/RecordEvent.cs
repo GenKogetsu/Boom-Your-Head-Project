@@ -47,7 +47,7 @@ public record struct BombExplodedEvent(Vector2Int Position,int Radius, List<Tile
 /// <para> (TH) : เมื่อ Character ตาย (ส่งข้อมูล GameObject และประเภทเพื่อไปจัดการต่อ) </para>
 /// <para> (EN) : When an Character dies. </para>
 /// </summary>
-public record struct CharacterDeathEvent(GameObject Victim, Character Character) : IEvent;
+public record struct CharacterDeathEvent(GameObject Victim, Character CharacterName) : IEvent;
 
 // --- Environment Group ---
 

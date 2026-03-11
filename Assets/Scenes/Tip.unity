@@ -693,9 +693,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3e2bd8be49a45a41bfe767eb3cd700e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MultiSceneTimerLoader
-  _delaySeconds: 2
+  _delaySeconds: 5
   _firstScene: ChooseCharacterScene
-  _secondScene: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -54,11 +54,11 @@ namespace Genoverrei.DesignPattern
 
                     // เลือกสี Debug ตามสถานะ (ถ้าเริ่มเข้าช่วง Over จะเป็นสีส้มเหลือง)
                     string color = _totalCreatedCount > _maxSize ? "#FFCA28" : "#FF8A65";
-                    Debug.Log($"<b><color={color}>[Pool Create]</color></b> ✨ Created NEW: <b>{_prefab.name}</b> ({_totalCreatedCount}/{finalLimit}) [Over: {_overPercent}%]");
+                    Debug.Log($"<b><color={color}>[Pool Create]</color></b> Created NEW: <b>{_prefab.name}</b> ({_totalCreatedCount}/{finalLimit}) [Over: {_overPercent}%]");
                 }
                 else
                 {
-                    Debug.LogWarning($"<b><color=#FF1744>[Pool Limit]</color></b> 🛑 {_prefab.name} reached HARD LIMIT ({finalLimit})!");
+                    Debug.LogWarning($"<b><color=#FF1744>[Pool Limit]</color></b>{_prefab.name} reached HARD LIMIT ({finalLimit})!");
                     return null;
                 }
             }

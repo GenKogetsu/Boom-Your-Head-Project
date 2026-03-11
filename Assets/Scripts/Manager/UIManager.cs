@@ -29,7 +29,6 @@ namespace BombGame.UI
 
         private void Update()
         {
-            // อัปเดตข้อมูลสดๆ ของทุกคนทุกเฟรม
             UpdatePlayerUI(_ryuwenStats, _ryuwenOut, _ryuwenHp, _ryuwenBomb, _ryuwenSpeed, _ryuwenRange);
             UpdatePlayerUI(_ediganStats, _ediganOut, _ediganHp, _ediganBomb, _ediganSpeed, _ediganRange);
             UpdatePlayerUI(_baboonStats, _baboonOut, _baboonHp, _baboonBomb, _baboonSpeed, _baboonRange);
@@ -38,24 +37,19 @@ namespace BombGame.UI
 
         private void UpdatePlayerUI(StatsController stats, GameObject outImg, TextMeshProUGUI hp, TextMeshProUGUI bomb, TextMeshProUGUI speed, TextMeshProUGUI range)
         {
-            // 🛡️ ถ้าไม่ได้ลาก Stats ของตัวละครนั้นมา (เช่น เล่นไม่ครบคน) ให้ข้ามไป
             if (stats == null) return;
 
-            // 1. อัปเดตตัวเลขล่าสุดจาก StatsController
             if (hp) hp.text = stats.CurrentHp.ToString();
             if (bomb) bomb.text = stats.BombsRemaining.ToString();
 
-            // ปัดเศษทศนิยมความเร็ว
             int speedVal = (int)Mathf.Floor(stats.CurrentSpeed);
             if (speed) speed.text = speedVal.ToString();
 
             if (range) range.text = stats.CurrentExplosionRange.ToString();
 
-            // 2. เช็คเลือดเพื่อเปิดป้าย OUT
             if (outImg)
             {
                 bool isDead = stats.CurrentHp <= 0;
-                // ป้องกันการ SetActive ซ้ำทุกเฟรมเพื่อประหยัดสเปค
                 if (outImg.activeSelf != isDead) outImg.SetActive(isDead);
             }
         }

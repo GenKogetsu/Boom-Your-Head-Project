@@ -38,7 +38,7 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "WASD",
+                    "name": "Arrow",
                     "id": "e8b80616-9657-47bf-9f47-76a2bf33bbb7",
                     "path": "Dpad",
                     "interactions": "",
@@ -51,7 +51,7 @@
                 {
                     "name": "up",
                     "id": "74922f34-8680-4303-abb1-ff4f4664fadb",
-                    "path": "<Keyboard>/w",
+                    "path": "<Keyboard>/upArrow",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -62,7 +62,7 @@
                 {
                     "name": "down",
                     "id": "c9dbe46f-e54a-4b68-a708-82fcf2118705",
-                    "path": "<Keyboard>/s",
+                    "path": "<Keyboard>/downArrow",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -73,7 +73,7 @@
                 {
                     "name": "left",
                     "id": "759af91e-a26a-4fb1-8e75-a2624b4587f1",
-                    "path": "<Keyboard>/a",
+                    "path": "<Keyboard>/leftArrow",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -84,7 +84,7 @@
                 {
                     "name": "right",
                     "id": "97054713-ee55-4182-b4d1-1207a4ea63ff",
-                    "path": "<Keyboard>/d",
+                    "path": "<Keyboard>/rightArrow",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",

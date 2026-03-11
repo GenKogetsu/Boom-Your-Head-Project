@@ -1,11 +1,12 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
-using Genoverrei.DesignPattern;
+﻿using Genoverrei.DesignPattern;
 using Genoverrei.Libary;
 using NaughtyAttributes;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using UnityEngine;
 
-public sealed class BotController : MonoBehaviour, IPathfindable
+public sealed class BotCommander : MonoBehaviour, IPathfindable, IPauseWhenSceneAnimation
 {
     #region Variables
     [Header("Observer & Data")]
@@ -32,20 +33,53 @@ public sealed class BotController : MonoBehaviour, IPathfindable
     private Dictionary<Character, StatsController> _controlledStatsMap = new Dictionary<Character, StatsController>();
     private Dictionary<Character, BotBrainState> _botBrains = new Dictionary<Character, BotBrainState>();
     private Dictionary<Character, float> _unreachableTargetTimer = new Dictionary<Character, float>();
+    private Dictionary<Character, Vector2> _lastSentMove = new Dictionary<Character, Vector2>();
+    private Dictionary<Character, Vector2Int> _lastNextStep = new Dictionary<Character, Vector2Int>();
+    private Dictionary<Character, Vector2Int> _prevGridPos = new Dictionary<Character, Vector2Int>();
+    private Dictionary<Character, int> _stuckCount = new Dictionary<Character, int>();
+    private Dictionary<Character, float> _replanCooldown = new Dictionary<Character, float>();
 
     private float _nextThinkTime;
     private float _nextReflexTime;
     private const float UNREACHABLE_TIMEOUT = 2.0f;
+    private const int STUCK_LIMIT = 45;
+    private const float REPLAN_COOLDOWN_SECONDS = 1.0f;
     #endregion
 
     public Vector2Int CurrentGridPosition => Vector2Int.zero;
     public IMapProvider MapProvider => null;
-    Vector2Int IPathfindable.GetNextPath(Vector2Int target) => PathfindAbility<BotController>.Execute(this, target);
+    Vector2Int IPathfindable.GetNextPath(Vector2Int target) => PathfindAbility<BotCommander>.Execute(this, target);
+
+    private bool _isSceneLoading = true;
 
     #region Unity Lifecycle
 
+    private void OnEnable()
+    {
+        if (EventBus.Instance != null)
+        {
+            EventBus.Instance.Subscribe<LoadSceneEvent>(OnSceneLoading);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (EventBus.Instance != null)
+        {
+            EventBus.Instance.Unsubscribe<LoadSceneEvent>(OnSceneLoading);
+        }
+    }
+
     private void FixedUpdate()
     {
+        if (_isSceneLoading) return;
+
+        var keys = _replanCooldown.Keys.ToList();
+        foreach (var k in keys)
+        {
+            if (_replanCooldown[k] > 0f) _replanCooldown[k] -= Time.fixedDeltaTime;
+        }
+
         if (_controlledStatsMap.Count == 0 || _controlledStatsMap.Any(kvp => kvp.Value == null))
         {
             ExecuteRefreshTarget();
@@ -74,7 +108,7 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         {
             if (kvp.Value == null || !_botBrains.ContainsKey(kvp.Key)) continue;
             var brain = _botBrains[kvp.Key];
-            Gizmos.color = brain.Behavior == BotFullStateMachine.Fleeing ? Color.cyan : Color.yellow;
+            Gizmos.color = brain.Behavior == BotFullStateMachine.Fleeing ? UnityEngine.Color.cyan : UnityEngine.Color.yellow;
             Vector2 start = (Vector2)WorldToGrid(kvp.Value.transform.position);
             if (brain.CurrentFullPath != null)
             {
@@ -92,6 +126,11 @@ public sealed class BotController : MonoBehaviour, IPathfindable
     private Vector2Int WorldToGrid(Vector2 worldPos) => new Vector2Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y));
 
     #region Core Logic
+
+    public void OnSceneLoading(LoadSceneEvent eventData)
+    {
+        _isSceneLoading = eventData.Isloding;
+    }
 
     private void ExecuteReflexes()
     {
@@ -135,13 +174,21 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             Vector2Int myGridPos = WorldToGrid(stats.transform.position);
             int safeRadius = stats.CurrentExplosionRange + 1;
 
+            while (brain.CurrentFullPath.Count > 0 && brain.CurrentFullPath[0] == myGridPos)
+            {
+                brain.CurrentFullPath.RemoveAt(0);
+            }
+
+            if (_replanCooldown.TryGetValue(botId, out var cd) && cd > 0f)
+                continue;
+
             if (brain.CurrentFullPath.Count > 0)
             {
                 Vector2Int pathEnd = brain.CurrentFullPath[brain.CurrentFullPath.Count - 1];
 
                 if (brain.TargetItemPos.x != -9999 && pathEnd == brain.TargetItemPos && CheckHasItemAt(brain.TargetItemPos))
                 {
-                    return;
+                    continue;
                 }
             }
 
@@ -158,8 +205,9 @@ public sealed class BotController : MonoBehaviour, IPathfindable
                 if (brain.CurrentFullPath.Count == 0)
                 {
                     brain.TargetItemPos = new Vector2Int(-9999, -9999);
+                    _replanCooldown[botId] = REPLAN_COOLDOWN_SECONDS;
                 }
-                return;
+                continue;
             }
 
             Vector2Int nearestBox = ExecuteFindNearestBox(myGridPos, 30);
@@ -167,38 +215,136 @@ public sealed class BotController : MonoBehaviour, IPathfindable
 
             if (brain.CurrentFullPath.Count > 0 && !_mapChannel.IsWalkable(brain.CurrentFullPath[0]))
             {
-                if (Vector2Int.Distance(myGridPos, brain.CurrentFullPath[0]) <= 1.1f) ExecuteRequestBomb(botId, stats);
-                brain.CurrentFullPath.Clear();
+                if (Vector2Int.Distance(myGridPos, brain.CurrentFullPath[0]) <= 1.1f)
+                {
+                    ExecuteRequestBomb(botId, stats);
+                    brain.CurrentFullPath.Clear();
+                    _nextReflexTime = 0f;
+                }
+                else
+                {
+                    brain.CurrentFullPath.Clear();
+                }
             }
         }
     }
 
     private void ExecuteMovement()
     {
+        const float snapThreshold = 0.12f;
         foreach (var botId in _targetsToDrive)
         {
             if (!_controlledStatsMap.TryGetValue(botId, out var stats) || stats == null || stats.CurrentHp <= 0) continue;
             var brain = _botBrains[botId];
+
             if (brain.CurrentFullPath == null || brain.CurrentFullPath.Count == 0)
             {
-                _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+                if (!_lastSentMove.ContainsKey(botId) || _lastSentMove[botId] != Vector2.zero)
+                {
+                    _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+                    _lastSentMove[botId] = Vector2.zero;
+                }
                 continue;
             }
+
+            Vector2Int myGridPos = WorldToGrid(stats.transform.position);
+            if (brain.CurrentFullPath.Count > 0 && brain.CurrentFullPath[0] == myGridPos)
+            {
+                brain.CurrentFullPath.RemoveAt(0);
+                if (brain.CurrentFullPath.Count == 0)
+                {
+                    if (!_lastSentMove.ContainsKey(botId) || _lastSentMove[botId] != Vector2.zero)
+                    {
+                        _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+                        _lastSentMove[botId] = Vector2.zero;
+                    }
+                    continue;
+                }
+            }
+
+            if (brain.CurrentFullPath == null || brain.CurrentFullPath.Count == 0) continue;
 
             Vector2Int nextStep = brain.CurrentFullPath[0];
             Vector2 dir = (Vector2)nextStep - (Vector2)stats.transform.position;
 
-            if (dir.magnitude < 0.05f)
+            if (dir.magnitude < snapThreshold)
             {
                 stats.transform.position = (Vector2)nextStep;
                 brain.CurrentFullPath.RemoveAt(0);
+
+                if (brain.CurrentFullPath.Count == 0)
+                {
+                    if (!_lastSentMove.ContainsKey(botId) || _lastSentMove[botId] != Vector2.zero)
+                    {
+                        _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+                        _lastSentMove[botId] = Vector2.zero;
+                    }
+                    continue;
+                }
+                else
+                {
+                    nextStep = brain.CurrentFullPath[0];
+                    dir = (Vector2)nextStep - (Vector2)stats.transform.position;
+                }
+            }
+
+            if (!_lastNextStep.ContainsKey(botId) || _lastNextStep[botId] != nextStep)
+            {
+                _lastNextStep[botId] = nextStep;
+                _stuckCount[botId] = 0;
+            }
+            else
+            {
+                if (!_prevGridPos.ContainsKey(botId) || _prevGridPos[botId] == myGridPos)
+                {
+                    _stuckCount[botId] = (_stuckCount.ContainsKey(botId) ? _stuckCount[botId] : 0) + 1;
+                }
+                else
+                {
+                    _stuckCount[botId] = 0;
+                }
+            }
+            _prevGridPos[botId] = myGridPos;
+
+            if (_stuckCount.ContainsKey(botId) && _stuckCount[botId] >= STUCK_LIMIT)
+            {
+                brain.CurrentFullPath.Clear();
+                _replanCooldown[botId] = REPLAN_COOLDOWN_SECONDS;
+                _stuckCount[botId] = 0;
+                if (!_lastSentMove.ContainsKey(botId) || _lastSentMove[botId] != Vector2.zero)
+                {
+                    _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(Vector2.zero));
+                    _lastSentMove[botId] = Vector2.zero;
+                }
                 continue;
             }
 
-            ExecuteRequestMove(botId, stats, nextStep);
+            Vector2 finalDir = Vector2.zero;
+            float absX = Mathf.Abs(dir.x);
+            float absY = Mathf.Abs(dir.y);
+            const float HYSTERESIS = 0.1f;
+            if (absX > absY + HYSTERESIS)
+                finalDir.x = Mathf.Sign(dir.x);
+            else if (absY > absX + HYSTERESIS)
+                finalDir.y = Mathf.Sign(dir.y);
+            else
+            {
+                if (absX >= absY) finalDir.x = Mathf.Sign(dir.x);
+                else finalDir.y = Mathf.Sign(dir.y);
+            }
+
+            Vector2 finalDirNormalized = finalDir.normalized;
+            var moveController = stats.GetComponent<MoveController>();
+            bool isMoving = moveController != null && moveController.IsMoving;
+
+            if (!_lastSentMove.ContainsKey(botId)) _lastSentMove[botId] = Vector2.zero;
+            if (isMoving && _lastSentMove[botId] == finalDirNormalized) continue;
+
+            _botInputChannel.RaiseEvent(botId, ActionType.Move, new MoveInputEvent(finalDirNormalized));
+            _lastSentMove[botId] = finalDirNormalized;
         }
     }
-        
+
     private void ExecuteRequestMove(Character botId, StatsController stats, Vector2Int targetGrid)
     {
         Vector2 dir = (Vector2)targetGrid - (Vector2)stats.transform.position;
@@ -228,6 +374,11 @@ public sealed class BotController : MonoBehaviour, IPathfindable
         _controlledStatsMap.Clear();
         _targetsToDrive.Clear();
         _unreachableTargetTimer.Clear();
+        _lastSentMove.Clear();
+        _lastNextStep.Clear();
+        _prevGridPos.Clear();
+        _stuckCount.Clear();
+        _replanCooldown.Clear();
 
         foreach (var botId in _sessionData.SelectedBots)
         {
@@ -236,6 +387,11 @@ public sealed class BotController : MonoBehaviour, IPathfindable
             {
                 _controlledStatsMap.Add(botId, s);
                 _targetsToDrive.Add(botId);
+                _lastSentMove[botId] = Vector2.zero;
+                _lastNextStep[botId] = new Vector2Int(-9999, -9999);
+                _prevGridPos[botId] = new Vector2Int(-9999, -9999);
+                _stuckCount[botId] = 0;
+                _replanCooldown[botId] = 0f;
             }
         }
     }

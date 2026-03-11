@@ -67,7 +67,7 @@ public sealed class InputManager : MonoBehaviour, IPauseWhenSceneAnimation
             _botInputChannel.OnBotActionTriggered += ExecuteHandleBotInput;
 
         if (EventBus.Instance != null)
-            EventBus.Instance.Subscribe<LoadSceneEvent>(WhenAnimationPlayed);
+            EventBus.Instance.Subscribe<LoadSceneEvent>(OnSceneLoading);
     }
 
     private void OnDisable()
@@ -76,7 +76,7 @@ public sealed class InputManager : MonoBehaviour, IPauseWhenSceneAnimation
             _botInputChannel.OnBotActionTriggered -= ExecuteHandleBotInput;
 
         if (EventBus.Instance != null)
-            EventBus.Instance.Unsubscribe<LoadSceneEvent>(WhenAnimationPlayed);
+            EventBus.Instance.Unsubscribe<LoadSceneEvent>(OnSceneLoading);
 
         _singlePlayerMap?.Disable();
         _multiplayerMap?.Disable();
@@ -132,9 +132,9 @@ public sealed class InputManager : MonoBehaviour, IPauseWhenSceneAnimation
             EventBus.Instance.Publish<ISignal>(signal);
     }
 
-    public void WhenAnimationPlayed(LoadSceneEvent loadSceneEvent)
+    public void OnSceneLoading(LoadSceneEvent eventData)
     {
-        if (loadSceneEvent.Isloding)
+        if (eventData.Isloding)
         {
             _singlePlayerMap?.Disable();
             _multiplayerMap?.Disable();

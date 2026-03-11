@@ -53,13 +53,13 @@ namespace Genoverrei.DesignPattern
                 // ถ้าในคิวเต็มเกิน MaxSize แล้ว ให้ทำลายทิ้งเพื่อไม่ให้ Memory บวม
                 if (pool.InactiveCount >= pool.MaxSize)
                 {
-                    Debug.Log($"<b><color=#F06292>[Pool Capacity Control]</color></b> 🔥 <b>{key}</b> เกินค่า Max ({pool.MaxSize}) ทำลายทิ้งทันที");
+                    Debug.Log($"<b><color=#F06292>[Pool Capacity Control]</color></b><b>{key}</b> เกินค่า Max ({pool.MaxSize}) ทำลายทิ้งทันที");
                     pool.DestroyItem(item.transform);
                 }
                 else
                 {
                     pool.Return(item.transform);
-                    Debug.Log($"<b><color=#69F0AE>[Pool Return]</color></b> ✅ <b>{key}</b> returned to pool.");
+                    Debug.Log($"<b><color=#69F0AE>[Pool Return]</color></b><b>{key}</b> returned to pool.");
                 }
             }
             else
@@ -78,7 +78,7 @@ namespace Genoverrei.DesignPattern
             {
                 kvp.Value.ReturnAllActive();
             }
-            Debug.Log("<b><color=#FFEB3B>[PoolManager]</color></b> 🧹 ดูดทุก Object กลับเข้า Pool เรียบร้อย!");
+            Debug.Log("<b><color=#FFEB3B>[PoolManager]</color></b>Clear All Obejct To Pool");
         }
 
         private void ExecuteInitialize()
@@ -126,7 +126,7 @@ namespace Genoverrei.DesignPattern
                     }
                     // -------------------------
 
-                    Debug.Log($"<b><color=#4FC3F7>[Pool Initialized]</color></b> 🚀 <b>{key}</b> (Init: {countToPreWarm} | Max: {entry.MaxSize})");
+                    Debug.Log($"<b><color=#4FC3F7>[Pool Initialized]</color></b><b>{key}</b> (Init: {countToPreWarm} | Max: {entry.MaxSize})");
                 }
             }
         }

@@ -18,10 +18,10 @@ MonoBehaviour:
     m_Value: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 1.32
+    m_Value: 1.73
   intensity:
     m_OverrideState: 1
-    m_Value: 0.33
+    m_Value: 0.12
   scatter:
     m_OverrideState: 0
     m_Value: 0.7
@@ -64,7 +64,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ColorAdjustments
   active: 1
   postExposure:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: -1.02
   contrast:
     m_OverrideState: 1

@@ -11,10 +11,8 @@ namespace BombGame.RecordEventSpace
     [CreateAssetMenu(fileName = "BotInputChannel", menuName = "BombGame/Events/Bot Input Channel")]
     public sealed class BotInputChannelSO : ScriptableObject
     {
-        // 🤖 สำหรับส่งคำสั่งจาก Bot ไปยัง InputManager (เพื่อให้บอทขยับได้)
         public event Action<Character, ActionType, IEvent> OnBotActionTriggered;
 
-        // 👣 สำหรับส่งสัญญาณจากผู้เล่น (Enemy) มาให้ Bot (เพื่อให้บอทฉลาดขึ้น/ดักทางได้)
         public event Action<ISignal> OnEnemyActionTriggered; 
 
         /// <summary>

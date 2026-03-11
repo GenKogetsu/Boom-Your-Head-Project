@@ -4,7 +4,7 @@ using NaughtyAttributes;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class CarMovementController : MonoBehaviour
+public class CarCommander : MonoBehaviour
 {
     public enum SpeedState { VerySlow, Slow, Middle, Fast, VeryFast, Nitro }
 
@@ -15,6 +15,10 @@ public class CarMovementController : MonoBehaviour
     [SerializeField] private float _baseMoveSpeed = 5f;
     [SerializeField] private float _stoppingDistance = 0.15f;
 
+    [Header("Arrival")]
+    [Tooltip("Pause time after arriving at a waypoint to avoid bouncing/oscillation")]
+    [SerializeField] private float _arrivalPause = 0.08f;
+    [ReadOnly][SerializeField] private float _arrivalTimer = 0f;
 
     [Header("Pacing Randomizer")]
     [ReadOnly][SerializeField] private SpeedState _currentState;
@@ -40,6 +44,17 @@ public class CarMovementController : MonoBehaviour
 
     private void Update()
     {
+        // countdown arrival pause in Update so animation can reflect stopped state
+        if (_arrivalTimer > 0f)
+        {
+            _arrivalTimer -= Time.deltaTime;
+            if (_arrivalTimer <= 0f)
+            {
+                _arrivalTimer = 0f;
+                // allow UpdateDirection to pick the next direction next frame
+            }
+        }
+
         UpdatePacing();
         UpdateDirection();
     }
@@ -50,29 +65,45 @@ public class CarMovementController : MonoBehaviour
 
         UpdateAnimation();
 
+        // if we are in arrival pause, stay snapped and don't move
+        if (_arrivalTimer > 0f)
+            return;
+
         Vector2 targetPos = _targetposition[_targetIndex];
         float distToTarget = Vector2.Distance(_rb2.position, targetPos);
+
+        // compute axis-aligned next movement based on discrete direction
         Vector2 nextMovement = _lastMoveDiraction * CurrentMoveSpeed * Time.fixedDeltaTime;
 
-        if (nextMovement.magnitude >= distToTarget)
+        // If target is very close or about to be overshot, snap to target and advance
+        if (distToTarget <= _stoppingDistance || (nextMovement.magnitude >= distToTarget && distToTarget > 0f))
         {
+            // snap exactly to grid target to avoid float drift and oscillation
             _rb2.MovePosition(targetPos);
+
+            // advance index
             _targetIndex = (_targetIndex + 1) % _targetposition.Count;
+
+            // short pause to avoid immediately reversing direction (prevents bounce)
+            _arrivalTimer = _arrivalPause;
+
+            // stop movement and animation until next direction is set
+            CurrentMoveSpeed = 0f;
+            _lastMoveDiraction = Vector2.zero;
+
+            return;
         }
-        else
-        {
-            _rb2.MovePosition(_rb2.position + nextMovement);
-        }
+
+        // normal movement
+        _rb2.MovePosition(_rb2.position + nextMovement);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        
         if (other.CompareTag("LivingThings"))
         {
             var target = other.GetComponentInParent<ITakeDamageable>();
-
-            target.TakeDamage(1);
+            if (target != null) target.TakeDamage(1);
         }
 
         if (other.TryGetComponent<BombController>(out var bomb))
@@ -108,12 +139,16 @@ public class CarMovementController : MonoBehaviour
     {
         if (_targetposition == null || _targetposition.Count == 0) return;
 
+        // don't compute new direction while in arrival pause
+        if (_arrivalTimer > 0f) return;
+
         Vector2 target = _targetposition[_targetIndex];
         Vector2 diff = target - _rb2.position;
         float distance = diff.magnitude;
 
         if (distance > _stoppingDistance)
         {
+            // discrete axis-aligned direction (prefer larger component)
             if (Mathf.Abs(diff.x) >= Mathf.Abs(diff.y))
                 _lastMoveDiraction = new Vector2(Mathf.Sign(diff.x), 0);
             else
@@ -122,6 +157,12 @@ public class CarMovementController : MonoBehaviour
             float targetSpeed = _baseMoveSpeed * _currentMultiplier;
             if (distance < 0.8f) targetSpeed *= Mathf.Clamp01(distance + 0.2f);
             CurrentMoveSpeed = Mathf.Lerp(CurrentMoveSpeed, targetSpeed, Time.deltaTime * 5f);
+        }
+        else
+        {
+            // within stoppingDistance, ensure we are stopped to avoid jitter
+            _lastMoveDiraction = Vector2.zero;
+            CurrentMoveSpeed = 0f;
         }
     }
 

@@ -15,5 +15,5 @@ MonoBehaviour:
   Entries:
   - Prefab: {fileID: 3939017888894637700, guid: e10230ffd5e90c3489946b2652130401, type: 3}
     InitialSize: 16
-    MaxSize: 256
+    MaxSize: 1024
     LimitOverPercent: 10
